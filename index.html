@@ -191,6 +191,7 @@
     <button onclick="clearProgress()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Clear</button>
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-02-parth-pdf</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -990,8 +991,12 @@ recalcAll = function() { _baseRecalc(); if (payViewOpen) buildPayTable(); };
 <script>
 function savePDF() {
   const btn = document.getElementById("pdf-btn");
+  if (btn.disabled) return; // prevent double-click stacking two renders
   btn.textContent = "⏳ Generating...";
   btn.disabled = true;
+
+  // Remove any orphaned PDF render containers left over from a previous attempt
+  document.querySelectorAll(".pdf-render-container").forEach(el => el.remove());
 
   const weekLabel = document.getElementById("header-week-label").textContent;
   const dateLabel = document.getElementById("date-display").textContent || "";
@@ -1009,14 +1014,15 @@ function savePDF() {
   const rows = [];
   document.querySelectorAll("tr.staff-row").forEach(tr => {
     const name = tr.querySelector(".name-cell")?.textContent?.trim() || "";
-    const cells = [...tr.querySelectorAll(".shift-cell input, .shift-cell .off-rota-cell")];
+    const cells = [...tr.querySelectorAll(".shift-cell input:not(.partial-h-input), .shift-cell .off-rota-cell")];
     const shifts = cells.map(el => el.value || el.textContent || "");
+    const partialH = tr.querySelector(".partial-h-input")?.value?.trim() || "";
     const hours  = tr.querySelector(".hours-total-cell")?.textContent?.trim() || "";
     const diff   = tr.querySelector(".contracted-diff-cell")?.textContent?.trim() || "";
     const diff_cls = tr.querySelector(".contracted-diff-cell")?.className || "";
     const cont   = tr.querySelector(".contracted-cell")?.textContent?.trim() || "";
     const is_off = name.includes("*");
-    rows.push({ name, shifts, hours, diff, diff_cls, cont, is_off });
+    rows.push({ name, shifts, partialH, hours, diff, diff_cls, cont, is_off });
   });
 
   // Gather section labels, day totals, date row
@@ -1064,9 +1070,10 @@ function savePDF() {
     return "#1b5e20";
   }
 
-  // Build compact HTML -- Name + Sun-Sat only (no Hours/vs Contract/Contract)
-  const cellW = 126;
-  const nameW = 130;
+  // Build compact HTML -- Name + Sun-Sat + Part H (no Hours/vs Contract/Contract)
+  const cellW = 116;
+  const nameW = 118;
+  const partHW = 62;
 
   let html = `
   <div style="width:${A4_W}px;font-family:Arial,sans-serif;font-size:11px;background:white;padding:8px;">
@@ -1080,52 +1087,62 @@ function savePDF() {
         <col style="width:${cellW}px"><col style="width:${cellW}px"><col style="width:${cellW}px">
         <col style="width:${cellW}px"><col style="width:${cellW}px"><col style="width:${cellW}px">
         <col style="width:${cellW}px">
+        <col style="width:${partHW}px">
       </colgroup>
       <thead>
         <tr>
-          <th style="background:#003865;color:white;padding:7px 8px;text-align:left;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Name</th>
-          <th style="background:#b45309;color:white;padding:7px 5px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sun</th>
-          ${["Mon","Tue","Wed","Thu","Fri"].map(d=>`<th style="background:#003865;color:white;padding:7px 5px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">${d}</th>`).join("")}
-          <th style="background:#6d28d9;color:white;padding:7px 5px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sat</th>
+          <th style="background:#003865;color:white;padding:7px 6px;text-align:left;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Name</th>
+          <th style="background:#b45309;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sun</th>
+          ${["Mon","Tue","Wed","Thu","Fri"].map(d=>`<th style="background:#003865;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">${d}</th>`).join("")}
+          <th style="background:#6d28d9;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sat</th>
+          <th style="background:#78350f;color:white;padding:7px 3px;text-align:center;font-size:11px;border:1px solid rgba(255,255,255,0.2);">Part H</th>
         </tr>
         <tr>
-          <td style="background:#1e3a5f;color:#b0c4de;padding:3px 8px;font-size:10px;border:1px solid rgba(255,255,255,0.1);">&nbsp;</td>
-          ${dateHeaders.slice(2,9).map(d=>`<td style="background:#1e3a5f;color:#b0c4de;padding:3px 5px;text-align:center;font-size:10px;border:1px solid rgba(255,255,255,0.1);">${d}</td>`).join("")}
+          <td style="background:#1e3a5f;color:#b0c4de;padding:3px 6px;font-size:10px;border:1px solid rgba(255,255,255,0.1);">&nbsp;</td>
+          ${dateHeaders.slice(1,8).map(d=>`<td style="background:#1e3a5f;color:#b0c4de;padding:3px 4px;text-align:center;font-size:10px;border:1px solid rgba(255,255,255,0.1);">${d}</td>`).join("")}
+          <td style="background:#1e3a5f;border:1px solid rgba(255,255,255,0.1);"></td>
         </tr>
       </thead>
       <tbody>`;
 
   rows.forEach((r, ri) => {
     if (ri === 0) {
-      html += `<tr><td colspan="8" style="background:#003865;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${pharmSection}</td></tr>`;
+      html += `<tr><td colspan="9" style="background:#003865;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${pharmSection}</td></tr>`;
     }
     if (ri === pharmCount) {
-      html += `<tr><td colspan="8" style="background:#00827F;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${retailSection}</td></tr>`;
+      html += `<tr><td colspan="9" style="background:#00827F;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${retailSection}</td></tr>`;
     }
 
     const rowBg = ri < pharmCount ? "#fafcff" : "#fafffe";
     html += `<tr>`;
-    html += `<td style="padding:6px 8px;background:${rowBg};border:1px solid #e5e7eb;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name.replace(" *","")}</td>`;
+    html += `<td style="padding:6px 6px;background:${rowBg};border:1px solid #e5e7eb;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name.replace(" *","")}</td>`;
 
     r.shifts.slice(0,7).forEach((val, di) => {
       const bg    = val ? shiftBg(val, di) : (r.is_off ? "#f9f9f9" : rowBg);
       const color = val ? shiftColor(val, di) : "#999";
       const fw    = val ? "700" : "400";
       const display = (r.is_off || !val) ? "" : val;
-      html += `<td style="padding:6px 3px;background:${bg};border:1px solid #e5e7eb;text-align:center;font-size:12px;font-weight:${fw};color:${color};">${display}</td>`;
+      html += `<td style="padding:6px 2px;background:${bg};border:1px solid #e5e7eb;text-align:center;font-size:11.5px;font-weight:${fw};color:${color};">${display}</td>`;
     });
+
+    // Part H column
+    const phVal = r.partialH || "";
+    const phBg  = phVal ? "#fef3c7" : rowBg;
+    const phCol = phVal ? "#78350f" : "#999";
+    html += `<td style="padding:6px 2px;background:${phBg};border:1px solid #e5e7eb;text-align:center;font-size:11px;font-weight:${phVal?'700':'400'};color:${phCol};">${phVal}</td>`;
 
     html += `</tr>`;
   });
 
-  // Day total rows -- Name + Sun-Sat only
+  // Day total rows -- Name + Sun-Sat + blank Part H col
   function totalRow(data, bg, textCol, label) {
     if (!data || data.length < 2) return "";
     let row = `<tr>`;
-    row += `<td style="background:${bg};color:${textCol};padding:6px 8px;font-weight:700;font-size:12px;border:1px solid #cbd5e1;">${label}</td>`;
+    row += `<td style="background:${bg};color:${textCol};padding:6px 6px;font-weight:700;font-size:12px;border:1px solid #cbd5e1;">${label}</td>`;
     for (let i = 1; i <= 7; i++) {
-      row += `<td style="background:${bg};color:${textCol};padding:6px 3px;text-align:center;font-weight:700;font-size:12px;border:1px solid #cbd5e1;">${data[i]||""}</td>`;
+      row += `<td style="background:${bg};color:${textCol};padding:6px 2px;text-align:center;font-weight:700;font-size:11.5px;border:1px solid #cbd5e1;">${data[i]||""}</td>`;
     }
+    row += `<td style="background:${bg};border:1px solid #cbd5e1;"></td>`;
     row += `</tr>`;
     return row;
   }
@@ -1135,10 +1152,11 @@ function savePDF() {
 
   // Grand total
   if (grandDay && grandDay.length >= 8) {
-    html += `<tr><td style="background:#003865;color:white;padding:7px 8px;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">Grand Day Total</td>`;
+    html += `<tr><td style="background:#003865;color:white;padding:7px 6px;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">Grand Day Total</td>`;
     for (let i = 1; i <= 7; i++) {
-      html += `<td style="background:#003865;color:white;padding:7px 3px;text-align:center;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">${grandDay[i]||""}</td>`;
+      html += `<td style="background:#003865;color:white;padding:7px 2px;text-align:center;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">${grandDay[i]||""}</td>`;
     }
+    html += `<td style="background:#003865;border:1px solid #1e3a5f;"></td>`;
     html += `</tr>`;
   }
 
@@ -1147,6 +1165,7 @@ function savePDF() {
 
   // Render
   const container = document.createElement("div");
+  container.className = "pdf-render-container";
   container.style.cssText = "position:fixed;left:-9999px;top:0;z-index:-1;";
   container.innerHTML = html;
   document.body.appendChild(container);
@@ -1160,11 +1179,11 @@ function savePDF() {
   };
 
   html2pdf().set(opt).from(container.firstElementChild).save().then(() => {
-    document.body.removeChild(container);
+    if (container.parentNode) container.remove();
     btn.textContent = "🗎 Save as PDF";
     btn.disabled = false;
   }).catch(() => {
-    document.body.removeChild(container);
+    if (container.parentNode) container.remove();
     btn.textContent = "🗎 Save as PDF";
     btn.disabled = false;
     alert("PDF generation failed. Make sure you are connected to the internet (needed once to load the PDF library), then try again.");
