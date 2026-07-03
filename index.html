@@ -190,8 +190,9 @@
     <span id="save-indicator" style="font-size:10px;opacity:0.5;transition:opacity 0.5s;color:white;"></span>
     <button onclick="clearProgress()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Clear</button>
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
+    <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-02-parth-pdf</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-02-keyholder-daily</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -291,6 +292,39 @@
   <div style="font-size:10px;color:var(--muted);margin-top:8px;padding:6px 10px;background:#f8fafc;border-radius:4px;border-left:3px solid var(--boots-teal);">
     Weekly Pay = actual hours this week &times; hourly rate. <strong>ED (Extra Duty)</strong> = any hours worked above contracted hours that week, at standard rate &times; ED hours, broken down by Pharmacy and Retail. Annual = contracted hours &times; rate &times; 52. Saira Naseem shown at £0.00 (salaried -- update rate manually).
   </div>
+</div>
+
+<!-- COVERAGE ANALYSIS PANEL -->
+<div id="coverage-panel" style="display:none;margin-top:16px;">
+  <div style="background:var(--boots-navy);color:white;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:15px;font-weight:700;">&#128737; Coverage Analysis</span>
+    <span style="font-size:11px;opacity:0.7;">Store hours: Mon&ndash;Fri 08:00&ndash;18:15 &bull; Sat 08:00&ndash;17:45 &bull; Sun 10:30&ndash;16:15</span>
+  </div>
+  <div style="background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:16px 18px;">
+
+    <div id="coverage-day-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px;"></div>
+
+    <div id="coverage-flags" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+  </div>
+</div>
+
+<!-- KEY HOLDER SUGGESTIONS PANEL -->
+<div id="keyholder-panel" style="display:none;margin-top:16px;">
+  <div style="background:#374151;color:white;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:15px;font-weight:700;">&#128273; Key Holder Suggestions</span>
+    <span style="font-size:11px;opacity:0.7;">Based on who opens earliest / closes latest this week</span>
+  </div>
+  <div style="background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:16px 18px;">
+    <div id="keyholder-content"></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px;padding:6px 10px;background:#f8fafc;border-radius:4px;border-left:3px solid #6b7280;">
+      This is a suggestion based on rota patterns only -- final key holder decisions should also consider seniority, training, DBS/right-to-work status, and company policy on safe access.
+    </div>
+  </div>
+</div>
+
+<div id="analysis-toggle-row" style="display:none;text-align:center;margin-top:12px;">
+  <span style="font-size:11px;color:var(--muted);">Analysis based on Week <span id="analysis-week-label"></span> data currently entered</span>
 </div>
 
 <script>
@@ -983,8 +1017,262 @@ function buildPayTable() {
 }
 
 // Auto-refresh pay table when rota data changes
+// ── COVERAGE & KEY HOLDER ANALYSIS ──────────────────────────────────────────
+let analysisViewOpen = false;
+
+const STORE_HOURS = {
+  sun: { open: "10:30", close: "16:15" },
+  mon: { open: "08:00", close: "18:15" },
+  tue: { open: "08:00", close: "18:15" },
+  wed: { open: "08:00", close: "18:15" },
+  thu: { open: "08:00", close: "18:15" },
+  fri: { open: "08:00", close: "18:15" },
+  sat: { open: "08:00", close: "17:45" },
+};
+
+function toMinutes(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function toggleAnalysisView() {
+  analysisViewOpen = !analysisViewOpen;
+  document.getElementById("coverage-panel").style.display  = analysisViewOpen ? "block" : "none";
+  document.getElementById("keyholder-panel").style.display = analysisViewOpen ? "block" : "none";
+  document.getElementById("analysis-toggle-row").style.display = analysisViewOpen ? "block" : "none";
+  document.getElementById("analysis-toggle-btn").style.background =
+    analysisViewOpen ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.12)";
+  if (analysisViewOpen) { buildCoverageAnalysis(); buildKeyHolderSuggestions(); }
+}
+
+function getShiftsForDay(dk) {
+  // Returns array of { name, group, start, end, startMin, endMin, isAbsence, raw }
+  const result = [];
+  STAFF.forEach(s => {
+    if (s.offRota) return; // off-rota staff don't count toward floor coverage
+    const raw = (weekData[currentWeek][s.name] || {})[dk] || "";
+    if (!raw || !raw.trim()) return;
+    const norm = normaliseShift(raw.trim());
+    const ab = absenceType(norm);
+    if (ab) { result.push({ name: s.name, group: s.group, isAbsence: true, raw: norm }); return; }
+    const m = norm.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    const start = `${m[1].padStart(2,"0")}:${m[2]}`;
+    const end   = `${m[3].padStart(2,"0")}:${m[4]}`;
+    result.push({
+      name: s.name, group: s.group, isAbsence: false,
+      start, end, startMin: toMinutes(start), endMin: toMinutes(end), raw: norm
+    });
+  });
+  return result;
+}
+
+function buildCoverageAnalysis() {
+  const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const grid = document.getElementById("coverage-day-grid");
+  const flagsBox = document.getElementById("coverage-flags");
+  grid.innerHTML = ""; flagsBox.innerHTML = "";
+
+  const allFlags = []; // { level: 'red'|'amber'|'info', text }
+
+  DAY_KEYS.forEach((dk, di) => {
+    const dayLabel = DAY_LABELS[di];
+    const hours = STORE_HOURS[dk];
+    const openMin  = toMinutes(hours.open);
+    const closeMin = toMinutes(hours.close);
+    const shifts = getShiftsForDay(dk).filter(s => !s.isAbsence);
+
+    const pharmShifts  = shifts.filter(s => s.group === "pharmacy");
+    const retailShifts = shifts.filter(s => s.group === "retail");
+
+    // Opening coverage: anyone starting AT or BEFORE store open time
+    const pharmOpen  = pharmShifts.filter(s => s.startMin <= openMin);
+    const retailOpen = retailShifts.filter(s => s.startMin <= openMin);
+    // Closing coverage: anyone ending AT or AFTER store close time
+    const pharmClose  = pharmShifts.filter(s => s.endMin >= closeMin);
+    const retailClose = retailShifts.filter(s => s.endMin >= closeMin);
+
+    // Determine day status colour
+    let status = "green", statusLabel = "Good";
+    if (pharmOpen.length === 0 || pharmClose.length === 0 || retailOpen.length === 0 || retailClose.length === 0) {
+      status = "red"; statusLabel = "Gap";
+    } else if (retailOpen.length < 2 || retailClose.length < 2) {
+      status = "amber"; statusLabel = "Thin";
+    }
+
+    // Build flags for this day
+    if (pharmOpen.length === 0) allFlags.push({ level:"red", text:`${dayLabel}: No pharmacy team member starts at/before store opening (${hours.open}).` });
+    if (retailOpen.length === 0) allFlags.push({ level:"red", text:`${dayLabel}: No retail team member starts at/before store opening (${hours.open}).` });
+    if (pharmClose.length === 0) allFlags.push({ level:"red", text:`${dayLabel}: No pharmacy team member is on shift at store closing (${hours.close}).` });
+    if (retailClose.length === 0) allFlags.push({ level:"red", text:`${dayLabel}: No retail team member is on shift at store closing (${hours.close}).` });
+    if (pharmOpen.length > 0 && retailOpen.length > 0 && retailOpen.length < 2) allFlags.push({ level:"amber", text:`${dayLabel}: Only 1 retail team member opening (ideal is 2).` });
+    if (pharmClose.length > 0 && retailClose.length > 0 && retailClose.length < 2) allFlags.push({ level:"amber", text:`${dayLabel}: Only 1 retail team member closing (ideal is 2).` });
+
+    // Staffing volume check -- total headcount on shift vs typical need
+    const totalHeadcount = shifts.length;
+    if (totalHeadcount > 0 && totalHeadcount <= 2 && (dk !== "sun")) {
+      allFlags.push({ level:"info", text:`${dayLabel}: Only ${totalHeadcount} people on shift store-wide -- check this is enough for footfall.` });
+    }
+
+    // Build day card
+    const bgMap = { green:"#f0fdf4", amber:"#fffbeb", red:"#fef2f2" };
+    const borderMap = { green:"#86efac", amber:"#fde047", red:"#fca5a5" };
+    const textMap = { green:"#166534", amber:"#854d0e", red:"#991b1b" };
+
+    const card = document.createElement("div");
+    card.style.cssText = `background:${bgMap[status]};border:1.5px solid ${borderMap[status]};border-radius:8px;padding:10px 8px;text-align:center;`;
+    card.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:${textMap[status]};margin-bottom:4px;">${dayLabel}</div>
+      <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">${hours.open}&ndash;${hours.close}</div>
+      <div style="font-size:10px;color:${textMap[status]};font-weight:600;margin-bottom:4px;">${statusLabel}</div>
+      <div style="font-size:9px;color:#374151;line-height:1.5;">
+        <div>Pharm open: <strong>${pharmOpen.length}</strong></div>
+        <div>Pharm close: <strong>${pharmClose.length}</strong></div>
+        <div>Retail open: <strong>${retailOpen.length}</strong></div>
+        <div>Retail close: <strong>${retailClose.length}</strong></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Weekly staffing volume advice (thin/over based on hours vs typical)
+  const weekAdvice = buildWeeklyStaffingAdvice();
+  allFlags.push(...weekAdvice);
+
+  // Render flags, red first then amber then info
+  const order = { red:0, amber:1, info:2 };
+  allFlags.sort((a,b) => order[a.level]-order[b.level]);
+
+  if (allFlags.length === 0) {
+    flagsBox.innerHTML = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:10px 14px;color:#166534;font-size:12px;font-weight:600;">✓ No coverage gaps found for this week.</div>`;
+  } else {
+    const iconMap = { red:"&#10060;", amber:"&#9888;&#65039;", info:"&#8505;&#65039;" };
+    const bgMap2  = { red:"#fef2f2", amber:"#fffbeb", info:"#eff6ff" };
+    const colMap2 = { red:"#991b1b", amber:"#854d0e", info:"#1e40af" };
+    allFlags.forEach(f => {
+      const row = document.createElement("div");
+      row.style.cssText = `background:${bgMap2[f.level]};border-left:3px solid ${colMap2[f.level]};border-radius:4px;padding:8px 12px;font-size:12px;color:${colMap2[f.level]};display:flex;gap:8px;align-items:flex-start;`;
+      row.innerHTML = `<span>${iconMap[f.level]}</span><span>${f.text}</span>`;
+      flagsBox.appendChild(row);
+    });
+  }
+
+  const wLbl = document.getElementById("analysis-week-label");
+  if (wLbl) wLbl.textContent = currentWeek;
+}
+
+function buildWeeklyStaffingAdvice() {
+  // Look at total scheduled hours per day (pharmacy + retail) vs a rough expected band
+  // based on trading hours length, to flag unusually thin or heavy days.
+  const flags = [];
+  const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const dayTotals = DAY_KEYS.map(dk => {
+    let total = 0;
+    STAFF.forEach(s => {
+      if (s.offRota) return;
+      const raw = (weekData[currentWeek][s.name] || {})[dk] || "";
+      if (!raw || !raw.trim()) return;
+      const day = dk.charAt(0).toUpperCase()+dk.slice(1);
+      const dayFull = { Sun:"Sun",Mon:"Mon",Tue:"Tue",Wed:"Wed",Thu:"Thu",Fri:"Fri",Sat:"Sat" }[day];
+      const { hrs } = parseShift(raw, dayFull, s.noBreak, s.contracted, s.dailyHrs, s.name);
+      total += hrs;
+    });
+    return total;
+  });
+
+  // Trading hours length per day (in hours) as a rough proxy for expected demand
+  const tradingLen = DAY_KEYS.map(dk => (toMinutes(STORE_HOURS[dk].close) - toMinutes(STORE_HOURS[dk].open)) / 60);
+
+  // Ratio of staff-hours to trading hours -- flag if notably low or high vs the week's own average
+  const ratios = dayTotals.map((t,i) => tradingLen[i] > 0 ? t / tradingLen[i] : 0);
+  const avgRatio = ratios.reduce((a,b)=>a+b,0) / ratios.length;
+
+  ratios.forEach((r, i) => {
+    if (avgRatio === 0) return;
+    const dayLabel = DAY_LABELS[i];
+    if (r < avgRatio * 0.65) {
+      flags.push({ level:"amber", text:`${dayLabel}: Staffing looks thin relative to the rest of the week (${dayTotals[i].toFixed(1)}h scheduled vs weekly average pattern) -- worth a second look.` });
+    } else if (r > avgRatio * 1.35) {
+      flags.push({ level:"info", text:`${dayLabel}: Staffing is notably heavier than the rest of the week (${dayTotals[i].toFixed(1)}h scheduled) -- check this is intentional (deliveries, promotions etc).` });
+    }
+  });
+
+  return flags;
+}
+
+function buildKeyHolderSuggestions() {
+  const content = document.getElementById("keyholder-content");
+  const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const dayRows = DAY_KEYS.map((dk, di) => {
+    const hours = STORE_HOURS[dk];
+    const openMin  = toMinutes(hours.open);
+    const closeMin = toMinutes(hours.close);
+    const shifts = getShiftsForDay(dk).filter(s => !s.isAbsence);
+
+    const openers = shifts.filter(s => s.startMin <= openMin)
+      .sort((a,b) => a.startMin - b.startMin);
+    const closers = shifts.filter(s => s.endMin >= closeMin)
+      .sort((a,b) => b.endMin - a.endMin);
+
+    return { dayLabel: DAY_LABELS[di], hours, openers, closers, hasShifts: shifts.length > 0 };
+  });
+
+  const anyData = dayRows.some(d => d.hasShifts);
+  if (!anyData) {
+    content.innerHTML = `<div style="color:#6b7280;font-size:12px;">No shift data entered yet for this week.</div>`;
+    return;
+  }
+
+  function personChip(p, isFirst) {
+    const groupColor = p.group === "pharmacy" ? "#003865" : "#00827F";
+    return `<span style="display:inline-flex;align-items:center;gap:4px;background:${isFirst?'#f0fdf4':'#f9fafb'};border:1px solid ${isFirst?'#86efac':'#e5e7eb'};border-radius:5px;padding:3px 9px;margin:2px 3px 2px 0;font-size:12px;">
+      ${isFirst?'⭐ ':''}<span style="font-weight:600;color:#1a1a2e;">${p.name}</span>
+      <span style="font-size:9px;color:${groupColor};font-weight:600;">${p.group==='pharmacy'?'PH':'RT'}</span>
+      <span style="font-size:10px;color:#6b7280;">${p.start||p.end}</span>
+    </span>`;
+  }
+
+  const rowsHtml = dayRows.map(d => {
+    const openChips = d.openers.length
+      ? d.openers.map((p,i) => personChip({...p, start:p.start}, i===0)).join("")
+      : `<span style="font-size:11px;color:#c0392b;font-weight:600;">&#10060; No one opening</span>`;
+    const closeChips = d.closers.length
+      ? d.closers.map((p,i) => personChip({...p, end:p.end}, i===0)).join("")
+      : `<span style="font-size:11px;color:#c0392b;font-weight:600;">&#10060; No one closing</span>`;
+
+    return `
+      <tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:10px 10px;vertical-align:top;">
+          <div style="font-weight:700;color:var(--boots-navy);font-size:13px;">${d.dayLabel}</div>
+          <div style="font-size:9px;color:#6b7280;">${d.hours.open}&ndash;${d.hours.close}</div>
+        </td>
+        <td style="padding:10px 10px;vertical-align:top;">${openChips}</td>
+        <td style="padding:10px 10px;vertical-align:top;">${closeChips}</td>
+      </tr>`;
+  }).join("");
+
+  content.innerHTML = `
+    <table style="border-collapse:collapse;width:100%;">
+      <thead>
+        <tr style="background:#f8fafc;">
+          <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--boots-navy);border-bottom:2px solid var(--border);">Day</th>
+          <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--boots-navy);border-bottom:2px solid var(--border);">&#127749; Opening Key Holder(s)</th>
+          <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--boots-navy);border-bottom:2px solid var(--border);">&#127751; Closing Key Holder(s)</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div style="font-size:9px;color:#6b7280;margin-top:8px;">⭐ = earliest starter / latest finisher that day (most likely candidate). PH = Pharmacy, RT = Retail.</div>`;
+}
+
 const _baseRecalc = recalcAll;
-recalcAll = function() { _baseRecalc(); if (payViewOpen) buildPayTable(); };
+recalcAll = function() {
+  _baseRecalc();
+  if (payViewOpen) buildPayTable();
+  if (analysisViewOpen) { buildCoverageAnalysis(); buildKeyHolderSuggestions(); }
+};
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
