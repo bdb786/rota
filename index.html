@@ -139,6 +139,7 @@
     /* Show only Name (col 1) + Sun-Sat (cols 2-8). Hide Part H (9), Hours (10), vs Contract (11), Contract (12) */
     thead tr.col-headers th:nth-child(n+9),
     thead tr.date-row td:nth-child(n+9),
+    thead tr.notes-row td:nth-child(n+9),
     tr.staff-row td:nth-child(n+9),
     tr.day-total-row td:nth-child(n+9),
     tr.section-label td { display: none !important; }
@@ -192,7 +193,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-02-keyholder-daily</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-04-toolkit</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -209,6 +210,13 @@
       style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;color:var(--boots-navy);font-weight:700;background:white;">
       <option value="">-- select --</option>
     </select>
+  </span>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+    <button onclick="copyWeek()" title="Copy this week's rota into another week tab" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128203; Copy Week</button>
+    <button id="undo-btn" onclick="undoLast()" disabled title="Undo the last change" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#8630; Undo</button>
+    <button onclick="savePDFAllWeeks()" id="pdf-all-btn" title="Save every week tab as one PDF" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128462; All Weeks PDF</button>
+    <button onclick="exportBackup()" title="Download all rota data as a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#166534;cursor:pointer;">&#128190; Backup</button>
+    <button onclick="importBackup()" title="Restore rota data from a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#92400e;cursor:pointer;">&#128194; Restore</button>
   </span>
 </div>
 
@@ -251,6 +259,17 @@
         <td id="d-sun"></td><td id="d-mon"></td><td id="d-tue"></td>
         <td id="d-wed"></td><td id="d-thu"></td><td id="d-fri"></td>
         <td id="d-sat"></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="notes-row" style="background:#fbfcfe;">
+        <td style="font-size:9px;color:#94a3b8;text-align:right;padding:2px 8px;text-transform:uppercase;letter-spacing:0.5px;">Notes</td>
+        <td><input type="text" class="day-note" data-day="sun" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="mon" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="tue" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="wed" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="thu" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="fri" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td><input type="text" class="day-note" data-day="sat" onchange="onNoteChange(this)" placeholder="" style="width:100%;border:none;background:transparent;font-size:10px;color:#92400e;font-style:italic;text-align:center;padding:2px;outline:none;"></td>
+        <td></td><td></td><td></td><td></td>
       </tr>
     </thead>
     <tbody id="rota-body"></tbody>
@@ -357,7 +376,7 @@ const STAFF = [
     dayHrs:{sun:5.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
   { name:"Theodore", group:"retail",   contracted:14.50, dailyHrs:7.25, offRota:false, rate:13.12,
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:7.25, thu:7.25, fri:0,    sat:0   } },
-  { name:"Juliana",  group:"retail",   contracted:30.00, dailyHrs:7.50, offRota:false, rate:13.12,
+  { name:"Kashif",   group:"retail",   contracted:30.00, dailyHrs:7.50, offRota:false, rate:13.02,
     dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
   { name:"Safa",     group:"retail",   contracted:12.75, dailyHrs:6.38, offRota:false, rate:13.12,
     dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
@@ -575,14 +594,25 @@ function parseShift(val, day, noBreak, contracted, dailyHrs, name) {
 }
 
 const STORAGE_KEY = "store1478_rota_v4";
+let weekNotes = {}; // { weekIndex: { sun:"", mon:"", ... } }
 
 function saveProgress() {
   try {
-    const data = { weekData, weekDates, bootsWeekNums, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
+    const data = { weekData, weekDates, weekNotes, bootsWeekNums, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     const el = document.getElementById("save-indicator");
     if (el) { el.textContent = "✓ Saved " + data.savedAt; el.style.opacity=1; setTimeout(()=>el.style.opacity=0.5, 2000); }
   } catch(e) { console.warn("Save failed:", e); }
+}
+
+function migrateStaffRenames() {
+  // One-time carry-over: Juliana replaced by Kashif (same shift pattern)
+  Object.keys(weekData).forEach(w => {
+    if (weekData[w] && weekData[w]["Juliana"] && !weekData[w]["Kashif"]) {
+      weekData[w]["Kashif"] = weekData[w]["Juliana"];
+    }
+    if (weekData[w]) delete weekData[w]["Juliana"];
+  });
 }
 
 function loadProgress() {
@@ -590,23 +620,105 @@ function loadProgress() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
-    if (data.weekData)     weekData     = data.weekData;
-    if (data.weekDates)    weekDates    = data.weekDates;
+    if (data.weekData)      weekData      = data.weekData;
+    if (data.weekDates)     weekDates     = data.weekDates;
+    if (data.weekNotes)     weekNotes     = data.weekNotes;
     if (data.bootsWeekNums) bootsWeekNums = data.bootsWeekNums;
-    if (data.totalWeeks)   TOTAL_WEEKS  = data.totalWeeks;
+    if (data.totalWeeks)    TOTAL_WEEKS   = data.totalWeeks;
+    migrateStaffRenames();
     return data.savedAt || true;
   } catch(e) { return false; }
 }
 
 function clearProgress() {
-  if (confirm("Clear all saved rota data for all three weeks? This cannot be undone.")) {
+  if (confirm("Clear all saved rota data for all weeks? (You can recover it with Undo if needed.)")) {
+    pushUndoSnapshot();
     localStorage.removeItem(STORAGE_KEY);
     weekData  = { 1:{}, 2:{}, 3:{} };
     weekDates = { 1:null, 2:null, 3:null };
+    weekNotes = {};
     buildTable();
     document.getElementById("week-date").value = "";
     document.getElementById("date-display").textContent = "";
   }
+}
+
+// ── BACKUP EXPORT / IMPORT ──────────────────────────────────────────────────
+function exportBackup() {
+  try {
+    const data = { weekData, weekDates, weekNotes, bootsWeekNums, totalWeeks: TOTAL_WEEKS,
+                   exportedAt: new Date().toISOString(), tool: "store1478-rota" };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const stamp = new Date().toISOString().split("T")[0];
+    a.download = `Store1478_Rota_Backup_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  } catch(e) { alert("Backup export failed: " + e.message); }
+}
+
+function importBackup() {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".json,application/json";
+  inp.onchange = () => {
+    const file = inp.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!data.weekData || data.tool !== "store1478-rota") {
+          alert("This file doesn't look like a Store 1478 rota backup."); return;
+        }
+        if (!confirm("Restore this backup? It will replace everything currently entered.")) return;
+        pushUndoSnapshot();
+        weekData      = data.weekData;
+        weekDates     = data.weekDates     || {};
+        weekNotes     = data.weekNotes     || {};
+        bootsWeekNums = data.bootsWeekNums || {};
+        TOTAL_WEEKS   = data.totalWeeks    || 3;
+        migrateStaffRenames();
+        currentWeek = 1;
+        saveProgress();
+        buildTabs();
+        switchWeek(1);
+        alert("Backup restored ✓");
+      } catch(e) { alert("Could not read that backup file: " + e.message); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// ── UNDO (last 20 changes) ──────────────────────────────────────────────────
+let undoStack = [];
+
+function pushUndoSnapshot() {
+  try {
+    undoStack.push(JSON.stringify({ weekData, weekDates, weekNotes, currentWeek }));
+    if (undoStack.length > 20) undoStack.shift();
+    const btn = document.getElementById("undo-btn");
+    if (btn) btn.disabled = false;
+  } catch(e) { /* non-fatal */ }
+}
+
+function undoLast() {
+  if (undoStack.length === 0) { return; }
+  try {
+    const snap = JSON.parse(undoStack.pop());
+    weekData  = snap.weekData;
+    weekDates = snap.weekDates;
+    weekNotes = snap.weekNotes || {};
+    currentWeek = snap.currentWeek || currentWeek;
+    saveProgress();
+    buildTabs();
+    switchWeek(currentWeek);
+    const btn = document.getElementById("undo-btn");
+    if (btn) btn.disabled = (undoStack.length === 0);
+  } catch(e) { alert("Undo failed: " + e.message); }
 }
 
 function fmtHrs(h)  { if (!h || h===0) return "\u2013"; return h%1===0 ? h.toFixed(0)+".00" : h.toFixed(2); }
@@ -627,6 +739,7 @@ function styleInput(el, day) {
 
 function onPartialHChange(el) {
   const name = el.dataset.name;
+  pushUndoSnapshot();
   if (!weekData[currentWeek][name]) weekData[currentWeek][name] = {};
   weekData[currentWeek][name].partialH = el.value.trim();
   // Style the cell
@@ -638,8 +751,40 @@ function onPartialHChange(el) {
   saveProgress();
 }
 
+function onNoteChange(el) {
+  pushUndoSnapshot();
+  if (!weekNotes[currentWeek]) weekNotes[currentWeek] = {};
+  weekNotes[currentWeek][el.dataset.day] = el.value.trim();
+  saveProgress();
+}
+
+function populateNotes() {
+  const notes = weekNotes[currentWeek] || {};
+  document.querySelectorAll(".day-note").forEach(inp => {
+    inp.value = notes[inp.dataset.day] || "";
+  });
+}
+
+function copyWeek() {
+  const target = prompt(`Copy Week ${currentWeek} to which week tab? (1-${TOTAL_WEEKS})`);
+  if (target === null) return;
+  const t = parseInt(target);
+  if (isNaN(t) || t < 1 || t > TOTAL_WEEKS) { alert(`Please enter a number between 1 and ${TOTAL_WEEKS}.`); return; }
+  if (t === currentWeek) { alert("That's the same week you're copying from."); return; }
+  const targetHasData = weekData[t] && Object.keys(weekData[t]).some(n =>
+    Object.values(weekData[t][n] || {}).some(v => v && String(v).trim()));
+  if (targetHasData && !confirm(`Week ${t} already has shifts entered. Overwrite them with Week ${currentWeek}'s rota?`)) return;
+  pushUndoSnapshot();
+  weekData[t]  = JSON.parse(JSON.stringify(weekData[currentWeek] || {}));
+  weekNotes[t] = JSON.parse(JSON.stringify(weekNotes[currentWeek] || {}));
+  saveProgress();
+  buildTabs();
+  switchWeek(t);
+}
+
 function onShiftChange(el) {
   const name=el.dataset.name, day=el.dataset.day;
+  pushUndoSnapshot();
   // Auto-correct missing colons
   const normalised = normaliseShift(el.value.trim());
   if (normalised !== el.value.trim()) el.value = normalised;
@@ -705,6 +850,7 @@ function buildTable() {
     tbody.appendChild(tr);
   });
 
+  populateNotes();
   recalcAll();
 }
 
@@ -856,7 +1002,7 @@ const DEFAULT_SHIFTS = {
   "Shamsu":   {mon:"09:45-18:15",tue:"09:45-18:15",wed:"09:00-17:30"},
   "Grace":    {sun:"10:30-16:00",fri:"09:45-18:15"},
   "Theodore": {wed:"10:00-18:15",thu:"10:00-18:15"},
-  "Juliana":  {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
+  "Kashif":   {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
   "Safa":     {sun:"10:30-16:15",sat:"09:15-17:45"},
   "Saleeha":  {sat:"09:00-17:30"},
   "Sajida":   {sat:"08:00-16:30"},
@@ -1139,6 +1285,9 @@ function buildCoverageAnalysis() {
   const weekAdvice = buildWeeklyStaffingAdvice();
   allFlags.push(...weekAdvice);
 
+  const restFlags = buildRestChecks();
+  allFlags.push(...restFlags);
+
   // Render flags, red first then amber then info
   const order = { red:0, amber:1, info:2 };
   allFlags.sort((a,b) => order[a.level]-order[b.level]);
@@ -1159,6 +1308,38 @@ function buildCoverageAnalysis() {
 
   const wLbl = document.getElementById("analysis-week-label");
   if (wLbl) wLbl.textContent = currentWeek;
+}
+
+function buildRestChecks() {
+  // Working Time Regulations: workers are entitled to 11 consecutive hours' rest
+  // between shifts. Check every consecutive day pair Sun→Mon ... Fri→Sat.
+  const flags = [];
+  const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const MIN_REST_MIN = 11 * 60;
+
+  STAFF.forEach(s => {
+    if (s.offRota) return;
+    for (let i = 0; i < 6; i++) {
+      const dk1 = DAY_KEYS[i], dk2 = DAY_KEYS[i+1];
+      const raw1 = (weekData[currentWeek][s.name] || {})[dk1] || "";
+      const raw2 = (weekData[currentWeek][s.name] || {})[dk2] || "";
+      if (!raw1.trim() || !raw2.trim()) continue;
+      const n1 = normaliseShift(raw1.trim()), n2 = normaliseShift(raw2.trim());
+      if (absenceType(n1) || absenceType(n2)) continue; // H/S/UNPAID days don't count
+      const m1 = n1.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
+      const m2 = n2.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
+      if (!m1 || !m2) continue;
+      const end1   = parseInt(m1[3])*60 + parseInt(m1[4]);
+      const start2 = parseInt(m2[1])*60 + parseInt(m2[2]);
+      const rest = (24*60 - end1) + start2;
+      if (rest < MIN_REST_MIN) {
+        const restH = Math.floor(rest/60), restM = rest % 60;
+        flags.push({ level:"red", text:`${s.name}: only ${restH}h${restM>0?" "+restM+"m":""} rest between ${DAY_LABELS[i]} finish (${m1[3].padStart(2,"0")}:${m1[4]}) and ${DAY_LABELS[i+1]} start (${m2[1].padStart(2,"0")}:${m2[2]}) — below the 11-hour Working Time rest requirement.` });
+      }
+    }
+  });
+
+  return flags;
 }
 
 function buildWeeklyStaffingAdvice() {
@@ -1277,26 +1458,15 @@ recalcAll = function() {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-function savePDF() {
-  const btn = document.getElementById("pdf-btn");
-  if (btn.disabled) return; // prevent double-click stacking two renders
-  btn.textContent = "⏳ Generating...";
-  btn.disabled = true;
+const PDF_A4_W = 1123; // A4 landscape at 96dpi = 1123px usable
 
-  // Remove any orphaned PDF render containers left over from a previous attempt
-  document.querySelectorAll(".pdf-render-container").forEach(el => el.remove());
-
-  const weekLabel = document.getElementById("header-week-label").textContent;
+function buildPdfHtmlForCurrentWeek() {
   const dateLabel = document.getElementById("date-display").textContent || "";
   const bootsWkLabel = (() => {
     const bw = bootsWeekNums[currentWeek];
     return bw ? `Boots Week ${bw}` : "";
   })();
-  const filename  = `Store1478_Rota_${weekLabel.replace(/\s/g,"")}_${dateLabel.replace(/[^a-zA-Z0-9]/g,"_")||"draft"}.pdf`;
-
-  // A4 landscape usable width = 277mm at 96dpi ≈ 1047px
-  // Build a self-contained compact table purely for PDF rendering
-  const A4_W = 1123; // A4 landscape at 96dpi = 1123px usable
+  const A4_W = PDF_A4_W;
 
   // Gather current shift data
   const rows = [];
@@ -1365,9 +1535,9 @@ function savePDF() {
 
   let html = `
   <div style="width:${A4_W}px;font-family:Arial,sans-serif;font-size:11px;background:white;padding:8px;">
-    <div style="background:#003865;color:white;padding:10px 14px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;">
+    <div style="background:white;color:#003865;padding:10px 14px;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #003865;">
       <span style="font-size:17px;font-weight:700;">Store 1478 &mdash; Rota</span>
-      <span style="font-size:13px;opacity:0.85;">${bootsWkLabel ? bootsWkLabel+" &nbsp;|&nbsp; " : ""}${dateLabel}</span>
+      <span style="font-size:13px;color:#4b5563;">${bootsWkLabel ? bootsWkLabel+" &nbsp;|&nbsp; " : ""}${dateLabel}</span>
     </div>
     <table style="border-collapse:collapse;width:100%;table-layout:fixed;">
       <colgroup>
@@ -1379,45 +1549,59 @@ function savePDF() {
       </colgroup>
       <thead>
         <tr>
-          <th style="background:#003865;color:white;padding:7px 6px;text-align:left;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Name</th>
-          <th style="background:#b45309;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sun</th>
-          ${["Mon","Tue","Wed","Thu","Fri"].map(d=>`<th style="background:#003865;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">${d}</th>`).join("")}
-          <th style="background:#6d28d9;color:white;padding:7px 4px;text-align:center;font-size:12px;border:1px solid rgba(255,255,255,0.2);">Sat</th>
-          <th style="background:#78350f;color:white;padding:7px 3px;text-align:center;font-size:11px;border:1px solid rgba(255,255,255,0.2);">Part H</th>
+          <th style="background:white;color:#003865;padding:7px 6px;text-align:left;font-size:12px;border:1px solid #9ca3af;border-bottom:2.5px solid #003865;">Name</th>
+          <th style="background:#fffbeb;color:#b45309;padding:7px 4px;text-align:center;font-size:12px;border:1px solid #9ca3af;border-bottom:2.5px solid #b45309;">Sun</th>
+          ${["Mon","Tue","Wed","Thu","Fri"].map(d=>`<th style="background:white;color:#003865;padding:7px 4px;text-align:center;font-size:12px;border:1px solid #9ca3af;border-bottom:2.5px solid #003865;">${d}</th>`).join("")}
+          <th style="background:#faf5ff;color:#6d28d9;padding:7px 4px;text-align:center;font-size:12px;border:1px solid #9ca3af;border-bottom:2.5px solid #6d28d9;">Sat</th>
+          <th style="background:#fffbeb;color:#78350f;padding:7px 3px;text-align:center;font-size:11px;border:1px solid #9ca3af;border-bottom:2.5px solid #78350f;">Part H</th>
         </tr>
         <tr>
-          <td style="background:#1e3a5f;color:#b0c4de;padding:3px 6px;font-size:10px;border:1px solid rgba(255,255,255,0.1);">&nbsp;</td>
-          ${dateHeaders.slice(1,8).map(d=>`<td style="background:#1e3a5f;color:#b0c4de;padding:3px 4px;text-align:center;font-size:10px;border:1px solid rgba(255,255,255,0.1);">${d}</td>`).join("")}
-          <td style="background:#1e3a5f;border:1px solid rgba(255,255,255,0.1);"></td>
-        </tr>
+          <td style="background:#f9fafb;color:#6b7280;padding:3px 6px;font-size:10px;border:1px solid #d1d5db;">&nbsp;</td>
+          ${dateHeaders.slice(1,8).map(d=>`<td style="background:#f9fafb;color:#6b7280;padding:3px 4px;text-align:center;font-size:10px;border:1px solid #d1d5db;">${d}</td>`).join("")}
+          <td style="background:#f9fafb;border:1px solid #d1d5db;"></td>
+        </tr>`;
+
+  // Notes row -- only if this week has any notes
+  const wkNotes = weekNotes[currentWeek] || {};
+  const hasNotes = DAY_KEYS.some(dk => (wkNotes[dk] || "").trim());
+  if (hasNotes) {
+    html += `
+        <tr>
+          <td style="background:#fffdf5;color:#92400e;padding:3px 6px;font-size:9px;border:1px solid #d1d5db;text-align:right;font-style:italic;">Notes</td>
+          ${DAY_KEYS.map(dk=>`<td style="background:#fffdf5;color:#92400e;padding:3px 4px;text-align:center;font-size:9.5px;font-style:italic;border:1px solid #d1d5db;">${(wkNotes[dk]||"").trim()}</td>`).join("")}
+          <td style="background:#fffdf5;border:1px solid #d1d5db;"></td>
+        </tr>`;
+  }
+
+  html += `
       </thead>
       <tbody>`;
 
   rows.forEach((r, ri) => {
     if (ri === 0) {
-      html += `<tr><td colspan="9" style="background:#003865;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${pharmSection}</td></tr>`;
+      html += `<tr><td colspan="9" style="background:#eef2f7;color:#003865;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;border:1px solid #9ca3af;border-left:4px solid #003865;">${pharmSection}</td></tr>`;
     }
     if (ri === pharmCount) {
-      html += `<tr><td colspan="9" style="background:#00827F;color:white;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;">${retailSection}</td></tr>`;
+      html += `<tr><td colspan="9" style="background:#eefaf8;color:#00695f;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:0.5px;border:1px solid #9ca3af;border-left:4px solid #00827F;">${retailSection}</td></tr>`;
     }
 
     const rowBg = ri < pharmCount ? "#fafcff" : "#fafffe";
     html += `<tr>`;
-    html += `<td style="padding:6px 6px;background:${rowBg};border:1px solid #e5e7eb;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name.replace(" *","")}</td>`;
+    html += `<td style="padding:6px 6px;background:${rowBg};border:1px solid #c2c8d0;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name.replace(" *","")}</td>`;
 
     r.shifts.slice(0,7).forEach((val, di) => {
       const bg    = val ? shiftBg(val, di) : (r.is_off ? "#f9f9f9" : rowBg);
       const color = val ? shiftColor(val, di) : "#999";
       const fw    = val ? "700" : "400";
       const display = (r.is_off || !val) ? "" : val;
-      html += `<td style="padding:6px 2px;background:${bg};border:1px solid #e5e7eb;text-align:center;font-size:11.5px;font-weight:${fw};color:${color};">${display}</td>`;
+      html += `<td style="padding:6px 2px;background:${bg};border:1px solid #c2c8d0;text-align:center;font-size:11.5px;font-weight:${fw};color:${color};">${display}</td>`;
     });
 
     // Part H column
     const phVal = r.partialH || "";
     const phBg  = phVal ? "#fef3c7" : rowBg;
     const phCol = phVal ? "#78350f" : "#999";
-    html += `<td style="padding:6px 2px;background:${phBg};border:1px solid #e5e7eb;text-align:center;font-size:11px;font-weight:${phVal?'700':'400'};color:${phCol};">${phVal}</td>`;
+    html += `<td style="padding:6px 2px;background:${phBg};border:1px solid #c2c8d0;text-align:center;font-size:11px;font-weight:${phVal?'700':'400'};color:${phCol};">${phVal}</td>`;
 
     html += `</tr>`;
   });
@@ -1426,11 +1610,11 @@ function savePDF() {
   function totalRow(data, bg, textCol, label) {
     if (!data || data.length < 2) return "";
     let row = `<tr>`;
-    row += `<td style="background:${bg};color:${textCol};padding:6px 6px;font-weight:700;font-size:12px;border:1px solid #cbd5e1;">${label}</td>`;
+    row += `<td style="background:${bg};color:${textCol};padding:6px 6px;font-weight:700;font-size:12px;border:1px solid #c2c8d0;">${label}</td>`;
     for (let i = 1; i <= 7; i++) {
-      row += `<td style="background:${bg};color:${textCol};padding:6px 2px;text-align:center;font-weight:700;font-size:11.5px;border:1px solid #cbd5e1;">${data[i]||""}</td>`;
+      row += `<td style="background:${bg};color:${textCol};padding:6px 2px;text-align:center;font-weight:700;font-size:11.5px;border:1px solid #c2c8d0;">${data[i]||""}</td>`;
     }
-    row += `<td style="background:${bg};border:1px solid #cbd5e1;"></td>`;
+    row += `<td style="background:${bg};border:1px solid #c2c8d0;"></td>`;
     row += `</tr>`;
     return row;
   }
@@ -1440,42 +1624,87 @@ function savePDF() {
 
   // Grand total
   if (grandDay && grandDay.length >= 8) {
-    html += `<tr><td style="background:#003865;color:white;padding:7px 6px;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">Grand Day Total</td>`;
+    html += `<tr><td style="background:#eef2f7;color:#003865;padding:7px 6px;font-weight:700;font-size:13px;border:1px solid #9ca3af;border-top:2.5px solid #003865;">Grand Day Total</td>`;
     for (let i = 1; i <= 7; i++) {
-      html += `<td style="background:#003865;color:white;padding:7px 2px;text-align:center;font-weight:700;font-size:13px;border:1px solid #1e3a5f;">${grandDay[i]||""}</td>`;
+      html += `<td style="background:#eef2f7;color:#003865;padding:7px 2px;text-align:center;font-weight:700;font-size:13px;border:1px solid #9ca3af;border-top:2.5px solid #003865;">${grandDay[i]||""}</td>`;
     }
-    html += `<td style="background:#003865;border:1px solid #1e3a5f;"></td>`;
+    html += `<td style="background:#eef2f7;border:1px solid #9ca3af;border-top:2.5px solid #003865;"></td>`;
     html += `</tr>`;
   }
 
   html += `</tbody></table>
   </div>`;
 
-  // Render
+  return html;
+}
+
+function renderPdf(innerHtml, filename, btn, btnLabel, multiPage) {
+  document.querySelectorAll(".pdf-render-container").forEach(el => el.remove());
+
   const container = document.createElement("div");
   container.className = "pdf-render-container";
   container.style.cssText = "position:fixed;left:-9999px;top:0;z-index:-1;";
-  container.innerHTML = html;
+  container.innerHTML = `<div>${innerHtml}</div>`;
   document.body.appendChild(container);
 
   const opt = {
     margin:      [5, 5, 5, 5],
     filename:    filename,
     image:       { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: A4_W },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: PDF_A4_W },
     jsPDF:       { unit: "mm", format: "a4", orientation: "landscape" }
   };
+  if (multiPage) opt.pagebreak = { mode: ["css", "legacy"] };
 
   html2pdf().set(opt).from(container.firstElementChild).save().then(() => {
     if (container.parentNode) container.remove();
-    btn.textContent = "🗎 Save as PDF";
+    btn.textContent = btnLabel;
     btn.disabled = false;
   }).catch(() => {
     if (container.parentNode) container.remove();
-    btn.textContent = "🗎 Save as PDF";
+    btn.textContent = btnLabel;
     btn.disabled = false;
     alert("PDF generation failed. Make sure you are connected to the internet (needed once to load the PDF library), then try again.");
   });
+}
+
+function savePDF() {
+  const btn = document.getElementById("pdf-btn");
+  if (btn.disabled) return; // prevent double-click stacking two renders
+  btn.textContent = "⏳ Generating...";
+  btn.disabled = true;
+
+  const weekLabel = document.getElementById("header-week-label").textContent;
+  const dateLabel = document.getElementById("date-display").textContent || "";
+  const filename  = `Store1478_Rota_${weekLabel.replace(/\s/g,"")}_${dateLabel.replace(/[^a-zA-Z0-9]/g,"_")||"draft"}.pdf`;
+
+  const html = buildPdfHtmlForCurrentWeek();
+  renderPdf(html, filename, btn, "🗎 Save as PDF", false);
+}
+
+function savePDFAllWeeks() {
+  const btn = document.getElementById("pdf-all-btn");
+  if (btn.disabled) return;
+  btn.textContent = "⏳ Generating...";
+  btn.disabled = true;
+
+  const origWeek = currentWeek;
+  const pages = [];
+  try {
+    for (let w = 1; w <= TOTAL_WEEKS; w++) {
+      switchWeek(w); // synchronous rebuild of the table for this week
+      pages.push(buildPdfHtmlForCurrentWeek());
+    }
+  } finally {
+    switchWeek(origWeek);
+  }
+
+  const combined = pages
+    .map((p, i) => p + (i < pages.length - 1 ? `<div class="html2pdf__page-break"></div>` : ""))
+    .join("");
+
+  const stamp = new Date().toISOString().split("T")[0];
+  renderPdf(combined, `Store1478_Rota_AllWeeks_${stamp}.pdf`, btn, "🗎 All Weeks PDF", true);
 }
 </script>
 
