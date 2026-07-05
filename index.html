@@ -193,7 +193,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-05-pdf-true</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-05-ripple</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -210,6 +210,7 @@
       style="border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;color:var(--boots-navy);font-weight:700;background:white;">
       <option value="">-- select --</option>
     </select>
+    <span id="payroll-wk-label" style="font-size:10px;color:var(--muted);"></span>
   </span>
   <span style="margin-left:12px;border-left:1px solid #e2e8f0;padding-left:12px;display:flex;align-items:center;gap:5px;" title="ACI base hours allocation for this week. Auto-filled from the FY2026 ACI report when the Boots week number matches; edit to override.">
     <label style="font-weight:600;color:var(--boots-navy);">ACI</label>
@@ -416,6 +417,11 @@ function populateAciInputs() {
   if (pi) pi.value = aci.pharmacy;
   if (ri) ri.value = aci.retail;
   if (ti) ti.innerHTML = `= ${aci.total.toFixed(2)}h (${aci.src}) &nbsp;·&nbsp; &asymp; ${fmtGBP(aci.pharmacy*PH_RATE)} Ph / ${fmtGBP(aci.retail*RT_RATE)} Rt`;
+  const pl = document.getElementById("payroll-wk-label");
+  if (pl) {
+    const bw = parseInt(bootsWeekNums[currentWeek]);
+    pl.textContent = bw ? `(Payroll processes this as Wk ${bw - 1 > 0 ? bw - 1 : 52}, in arrears)` : "";
+  }
 }
 
 function onAciChange() {
@@ -495,6 +501,15 @@ function sundayForWeek(weekIndex) {
 
 function updateBootsWeekForTab(val) {
   bootsWeekNums[currentWeek] = val;
+  // Offer to renumber the following tabs sequentially from this one
+  const n = parseInt(val);
+  if (!isNaN(n) && currentWeek < TOTAL_WEEKS) {
+    if (confirm(`Also renumber the following week tabs to run on from Wk ${n} (${Array.from({length: Math.min(3, TOTAL_WEEKS-currentWeek)}, (_,i)=>"Wk "+(((n + i) % 52) + 1)).join(", ")}${TOTAL_WEEKS-currentWeek>3?", ...":""})?`)) {
+      for (let w = currentWeek + 1; w <= TOTAL_WEEKS; w++) {
+        bootsWeekNums[w] = String(((n - 1 + (w - currentWeek)) % 52) + 1);
+      }
+    }
+  }
   buildTabs();
   populateAciInputs();
   recalcAll();
