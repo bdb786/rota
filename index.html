@@ -25,7 +25,7 @@
     display: flex;
     gap: 3px;
     background: #e2e8f0;
-    padding: 6px 10px;
+    padding: 10px 12px 6px;
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
     overflow-x: auto;
@@ -132,7 +132,7 @@
   @media print {
     body { background: white; padding: 4px; min-width: unset; font-size: 10px; }
     .page-header { border-radius: 0; padding: 6px 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .week-tabs, .week-date-row, .legend, .summary-footer, .help-text, #pay-panel { display: none !important; }
+    .week-tabs, .week-date-row, .legend, .summary-footer, .help-text, #pay-panel, #payroll-banner, #coverage-panel, #keyholder-panel, #analysis-toggle-row { display: none !important; }
     .table-wrap { border: none; border-radius: 0; overflow: visible; }
     table { min-width: unset; width: 100%; }
 
@@ -189,11 +189,11 @@
   <h1>Store 1478 &mdash; Rota</h1>
   <div style="display:flex;align-items:center;gap:10px;">
     <span id="save-indicator" style="font-size:10px;opacity:0.5;transition:opacity 0.5s;color:white;"></span>
-    <button onclick="clearProgress()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Clear</button>
+    <button onclick="clearProgress()" title="Clear this week's shifts only" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Clear Week</button>
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
-    <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Analysis</button>
+    <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-04-toolkit</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-05-pdf-true</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -211,14 +211,28 @@
       <option value="">-- select --</option>
     </select>
   </span>
+  <span style="margin-left:12px;border-left:1px solid #e2e8f0;padding-left:12px;display:flex;align-items:center;gap:5px;" title="ACI base hours allocation for this week. Auto-filled from the FY2026 ACI report when the Boots week number matches; edit to override.">
+    <label style="font-weight:600;color:var(--boots-navy);">ACI</label>
+    <span style="font-size:10px;color:var(--muted);">Ph</span>
+    <input type="number" id="aci-pharm" step="0.25" min="0" onchange="onAciChange()"
+      style="width:64px;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;color:var(--boots-navy);font-weight:700;text-align:center;">
+    <span style="font-size:10px;color:var(--muted);">Rt</span>
+    <input type="number" id="aci-retail" step="0.25" min="0" onchange="onAciChange()"
+      style="width:64px;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;color:var(--boots-navy);font-weight:700;text-align:center;">
+    <span id="aci-total" style="font-size:10px;color:var(--muted);"></span>
+  </span>
   <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
     <button onclick="copyWeek()" title="Copy this week's rota into another week tab" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128203; Copy Week</button>
     <button id="undo-btn" onclick="undoLast()" disabled title="Undo the last change" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#8630; Undo</button>
     <button onclick="savePDFAllWeeks()" id="pdf-all-btn" title="Save every week tab as one PDF" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128462; All Weeks PDF</button>
     <button onclick="exportBackup()" title="Download all rota data as a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#166534;cursor:pointer;">&#128190; Backup</button>
+    <button onclick="applyDefaultShifts()" title="Fill this week with the standard default shifts" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#11088; Default Shifts</button>
     <button onclick="importBackup()" title="Restore rota data from a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#92400e;cursor:pointer;">&#128194; Restore</button>
   </span>
 </div>
+
+<!-- PAYROLL SPEND SUMMARY -->
+<div id="payroll-banner" style="display:flex;align-items:center;gap:14px;background:white;border:1px solid var(--border);border-left:5px solid #94a3b8;border-radius:8px;padding:10px 16px;margin-top:10px;"></div>
 
 <div class="legend">
   <strong style="color:var(--boots-navy);margin-right:4px;">Codes:</strong>
@@ -238,7 +252,7 @@
     <div class="legend-swatch" style="background:#fdf4ff;border-color:#9c27b0;color:#4a148c;">S</div>
     <span>Sick &mdash; counts hrs</span>
   </div>
-  <div class="legend-item" style="margin-left:auto;color:var(--muted);">Blank = day off &nbsp;|&nbsp; Green = under ACI &nbsp;|&nbsp; Red = over ACI &nbsp;|&nbsp; Dom = off-rota (auto-included)</div>
+  <div class="legend-item" style="margin-left:auto;color:var(--muted);">Blank = day off &nbsp;|&nbsp; Green = under ACI &nbsp;|&nbsp; Red = over ACI &nbsp;|&nbsp; Dom &amp; Raza off-rota (hours auto-included) &nbsp;|&nbsp; Locum pharmacist Sat &amp; Sun in Pharmacy totals</div>
 </div>
 
 <div class="table-wrap">
@@ -347,7 +361,74 @@
 </div>
 
 <script>
-const ACI = { pharmacy:217.75, retail:207.25, total:425.00 };
+// ── ACI BASE HOURS ──────────────────────────────────────────────────────────
+// Per-fiscal-week allocations from the FY2026 ACI Base Hours report (Power BI export).
+// retail = Assistants + Retail Management (37.50). Weeks not listed fall back to the
+// base week, and both figures can be overridden per week tab in the ACI boxes.
+const ACI_BASE_WEEK = { pharmacy: 216.50, retail: 199.75 }; // FY2026 base week (total 416.25)
+const ACI_TABLE = {
+  1:{p:201.75,r:181.00},  2:{p:200.75,r:183.25},  3:{p:201.25,r:183.50},  4:{p:202.50,r:189.00},
+  5:{p:228.00,r:189.00},  6:{p:226.75,r:187.75},  7:{p:221.00,r:183.50},  8:{p:217.25,r:188.00},
+  9:{p:213.50,r:189.75}, 10:{p:214.50,r:194.25}, 11:{p:212.75,r:204.50}, 12:{p:204.25,r:207.75},
+ 13:{p:208.50,r:218.00}, 14:{p:208.75,r:221.75}, 15:{p:211.50,r:211.25}, 16:{p:215.25,r:216.50},
+ 17:{p:206.75,r:194.25}, 18:{p:210.75,r:200.75}, 19:{p:198.25,r:200.00}, 20:{p:205.25,r:203.00},
+ 21:{p:205.50,r:192.50}, 22:{p:207.25,r:204.25}, 23:{p:204.25,r:198.50}, 24:{p:211.00,r:209.50},
+ 25:{p:207.00,r:202.00}, 26:{p:208.75,r:203.00}, 27:{p:211.00,r:192.00}, 28:{p:218.50,r:207.50},
+ 29:{p:208.25,r:187.75}, 30:{p:201.00,r:185.25}, 31:{p:210.00,r:189.00}, 32:{p:204.25,r:178.50},
+ 33:{p:198.00,r:163.75}, 34:{p:205.25,r:189.50}, 35:{p:210.25,r:193.50}, 36:{p:206.50,r:187.75},
+ 37:{p:216.50,r:199.50}, 38:{p:211.50,r:192.75}, 39:{p:201.00,r:171.50}, 40:{p:207.75,r:196.75},
+ 41:{p:207.25,r:189.25}, 42:{p:217.75,r:207.25}, 43:{p:208.75,r:193.00}, 44:{p:211.50,r:196.75},
+ 45:{p:216.50,r:199.75}, 46:{p:214.50,r:200.75}, 47:{p:208.75,r:188.25}, 48:{p:206.50,r:192.25},
+ 49:{p:205.50,r:177.50}, 50:{p:211.00,r:196.25}, 51:{p:209.00,r:184.50}, 52:{p:203.50,r:188.25},
+};
+let aciByWeek = {}; // manual overrides per week tab: { weekIndex: { p, r } }
+
+function autoAci() {
+  const bw = parseInt(bootsWeekNums[currentWeek]);
+  const t = ACI_TABLE[bw];
+  if (t) return { p: t.p, r: t.r, src: `Boots Wk ${bw} ACI` };
+  return { p: ACI_BASE_WEEK.pharmacy, r: ACI_BASE_WEEK.retail, src: "base week" };
+}
+
+function getAci() {
+  const a = autoAci();
+  const o = aciByWeek[currentWeek] || {};
+  const p = (o.p != null && !isNaN(o.p)) ? o.p : a.p;
+  const r = (o.r != null && !isNaN(o.r)) ? o.r : a.r;
+  return { pharmacy: p, retail: r, total: p + r, src: (o.p != null || o.r != null) ? "manual" : a.src };
+}
+
+function groupBlendedRate(group) {
+  // Weighted average hourly rate for the group (rate x contracted hours)
+  let hw = 0, h = 0;
+  STAFF.forEach(s => { if (s.group !== group || !s.rate) return; hw += s.rate * s.contracted; h += s.contracted; });
+  return h ? hw / h : 0;
+}
+let PH_RATE = 0, RT_RATE = 0; // computed once STAFF is defined (below)
+
+function fmtGBP(n) { return "£" + n.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+function populateAciInputs() {
+  const aci = getAci();
+  const pi = document.getElementById("aci-pharm");
+  const ri = document.getElementById("aci-retail");
+  const ti = document.getElementById("aci-total");
+  if (pi) pi.value = aci.pharmacy;
+  if (ri) ri.value = aci.retail;
+  if (ti) ti.innerHTML = `= ${aci.total.toFixed(2)}h (${aci.src}) &nbsp;·&nbsp; &asymp; ${fmtGBP(aci.pharmacy*PH_RATE)} Ph / ${fmtGBP(aci.retail*RT_RATE)} Rt`;
+}
+
+function onAciChange() {
+  const p = parseFloat(document.getElementById("aci-pharm").value);
+  const r = parseFloat(document.getElementById("aci-retail").value);
+  if (!aciByWeek[currentWeek]) aciByWeek[currentWeek] = {};
+  aciByWeek[currentWeek].p = isNaN(p) ? null : p;
+  aciByWeek[currentWeek].r = isNaN(r) ? null : r;
+  if (aciByWeek[currentWeek].p == null && aciByWeek[currentWeek].r == null) delete aciByWeek[currentWeek];
+  saveProgress();
+  populateAciInputs();
+  recalcAll();
+}
 
 const STAFF = [
   { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
@@ -364,7 +445,7 @@ const STAFF = [
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Yasin",    group:"pharmacy", contracted:8.00,  dailyHrs:4.00, offRota:false, noBreak:true, rate:13.92,
     dayHrs:{sun:4.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:4.00} },
-  { name:"Dom",      group:"pharmacy", contracted:42.25, dailyHrs:8.45, offRota:true,  rate:20.14,
+  { name:"Dom",      group:"pharmacy", contracted:42.25, dailyHrs:8.45, offRota:true,  rate:20.14, offRotaLabel:"Pharmacist Off Rota",
     dayHrs:{sun:0,   mon:8.45, tue:8.45, wed:8.45, thu:8.45, fri:8.45, sat:0   } },
   { name:"Julie",    group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.12,
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
@@ -386,9 +467,17 @@ const STAFF = [
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Daisy",    group:"retail",   contracted:5.25,  dailyHrs:5.25, offRota:false, rate:13.12,
     dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
-  { name:"Raza",     group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:17.47,
+  { name:"Raza",     group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:true,  rate:17.47, offRotaLabel:"Off Rota",
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
 ];
+
+// Locum pharmacist cover when Dom is off (net hours after break rules):
+// Sat 08:30-17:30 = 8.00h net, Sun 11:00-16:00 = 4.50h net
+const LOCUM_PHARM = { sun: 4.50, sat: 8.00 };
+const LOCUM_RATE_EST = 20.14; // pharmacist rate used as locum cost estimate
+
+PH_RATE = groupBlendedRate("pharmacy");
+RT_RATE = groupBlendedRate("retail");
 
 let TOTAL_WEEKS = 3;
 
@@ -407,6 +496,8 @@ function sundayForWeek(weekIndex) {
 function updateBootsWeekForTab(val) {
   bootsWeekNums[currentWeek] = val;
   buildTabs();
+  populateAciInputs();
+  recalcAll();
   saveProgress();
 }
 
@@ -422,6 +513,28 @@ function populateBootsWkDropdown() {
     if (String(i) === String(current)) opt.selected = true;
     sel.appendChild(opt);
   }
+}
+
+function removeWeek(w) {
+  if (TOTAL_WEEKS <= 1) { alert("You need at least one week tab."); return; }
+  const bw = bootsWeekNums[w] ? `Boots Wk ${bootsWeekNums[w]}` : `Week ${w}`;
+  const dt = weekDates[w] || "no date";
+  if (!confirm(`Remove the ${bw} tab (${dt}) and all its shifts? (Undo can bring it back.)`)) return;
+  pushUndoSnapshot();
+  for (let i = w; i < TOTAL_WEEKS; i++) {
+    weekData[i]      = weekData[i+1];
+    weekDates[i]     = weekDates[i+1];
+    weekNotes[i]     = weekNotes[i+1];
+    aciByWeek[i]     = aciByWeek[i+1];
+    bootsWeekNums[i] = bootsWeekNums[i+1];
+  }
+  delete weekData[TOTAL_WEEKS]; delete weekDates[TOTAL_WEEKS]; delete weekNotes[TOTAL_WEEKS];
+  delete aciByWeek[TOTAL_WEEKS]; delete bootsWeekNums[TOTAL_WEEKS];
+  TOTAL_WEEKS--;
+  if (currentWeek > TOTAL_WEEKS) currentWeek = TOTAL_WEEKS;
+  saveProgress();
+  buildTabs();
+  switchWeek(currentWeek);
 }
 
 function addWeek() {
@@ -593,12 +706,12 @@ function parseShift(val, day, noBreak, contracted, dailyHrs, name) {
   return { hrs:0, absence:null };
 }
 
-const STORAGE_KEY = "store1478_rota_v4";
+const STORAGE_KEY = "store1478_rota_v5";
 let weekNotes = {}; // { weekIndex: { sun:"", mon:"", ... } }
 
 function saveProgress() {
   try {
-    const data = { weekData, weekDates, weekNotes, bootsWeekNums, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     const el = document.getElementById("save-indicator");
     if (el) { el.textContent = "✓ Saved " + data.savedAt; el.style.opacity=1; setTimeout(()=>el.style.opacity=0.5, 2000); }
@@ -612,6 +725,12 @@ function migrateStaffRenames() {
       weekData[w]["Kashif"] = weekData[w]["Juliana"];
     }
     if (weekData[w]) delete weekData[w]["Juliana"];
+    // Raza is now off-rota (auto-included at contracted hours) -- drop any saved shifts
+    if (weekData[w]) delete weekData[w]["Raza"];
+    // Remove any per-shift note keys from the retired notes feature
+    if (weekData[w]) Object.keys(weekData[w]).forEach(n => {
+      Object.keys(weekData[w][n] || {}).forEach(k => { if (k.endsWith("Note")) delete weekData[w][n][k]; });
+    });
   });
 }
 
@@ -623,6 +742,7 @@ function loadProgress() {
     if (data.weekData)      weekData      = data.weekData;
     if (data.weekDates)     weekDates     = data.weekDates;
     if (data.weekNotes)     weekNotes     = data.weekNotes;
+    if (data.aciByWeek)     aciByWeek     = data.aciByWeek;
     if (data.bootsWeekNums) bootsWeekNums = data.bootsWeekNums;
     if (data.totalWeeks)    TOTAL_WEEKS   = data.totalWeeks;
     migrateStaffRenames();
@@ -631,22 +751,20 @@ function loadProgress() {
 }
 
 function clearProgress() {
-  if (confirm("Clear all saved rota data for all weeks? (You can recover it with Undo if needed.)")) {
-    pushUndoSnapshot();
-    localStorage.removeItem(STORAGE_KEY);
-    weekData  = { 1:{}, 2:{}, 3:{} };
-    weekDates = { 1:null, 2:null, 3:null };
-    weekNotes = {};
-    buildTable();
-    document.getElementById("week-date").value = "";
-    document.getElementById("date-display").textContent = "";
-  }
+  const bw = bootsWeekNums[currentWeek] ? `Boots Wk ${bootsWeekNums[currentWeek]}` : `Week ${currentWeek}`;
+  if (!confirm(`Clear all shifts for ${bw} only? Other weeks are untouched. (Undo can bring it back.)`)) return;
+  pushUndoSnapshot();
+  weekData[currentWeek]  = {};
+  weekNotes[currentWeek] = {};
+  saveProgress();
+  buildTabs();
+  buildTable();
 }
 
 // ── BACKUP EXPORT / IMPORT ──────────────────────────────────────────────────
 function exportBackup() {
   try {
-    const data = { weekData, weekDates, weekNotes, bootsWeekNums, totalWeeks: TOTAL_WEEKS,
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS,
                    exportedAt: new Date().toISOString(), tool: "store1478-rota" };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -678,6 +796,7 @@ function importBackup() {
         weekData      = data.weekData;
         weekDates     = data.weekDates     || {};
         weekNotes     = data.weekNotes     || {};
+        aciByWeek     = data.aciByWeek     || {};
         bootsWeekNums = data.bootsWeekNums || {};
         TOTAL_WEEKS   = data.totalWeeks    || 3;
         migrateStaffRenames();
@@ -698,7 +817,7 @@ let undoStack = [];
 
 function pushUndoSnapshot() {
   try {
-    undoStack.push(JSON.stringify({ weekData, weekDates, weekNotes, currentWeek }));
+    undoStack.push(JSON.stringify({ weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS, currentWeek }));
     if (undoStack.length > 20) undoStack.shift();
     const btn = document.getElementById("undo-btn");
     if (btn) btn.disabled = false;
@@ -712,7 +831,10 @@ function undoLast() {
     weekData  = snap.weekData;
     weekDates = snap.weekDates;
     weekNotes = snap.weekNotes || {};
-    currentWeek = snap.currentWeek || currentWeek;
+    aciByWeek = snap.aciByWeek || {};
+    if (snap.bootsWeekNums) bootsWeekNums = snap.bootsWeekNums;
+    if (snap.totalWeeks)    TOTAL_WEEKS   = snap.totalWeeks;
+    currentWeek = Math.min(snap.currentWeek || currentWeek, TOTAL_WEEKS);
     saveProgress();
     buildTabs();
     switchWeek(currentWeek);
@@ -765,6 +887,15 @@ function populateNotes() {
   });
 }
 
+function applyDefaultShifts() {
+  if (!confirm(`Fill Week ${currentWeek} with the standard default shifts? This replaces anything currently entered in this week (Undo can bring it back).`)) return;
+  pushUndoSnapshot();
+  weekData[currentWeek] = copyShifts(DEFAULT_SHIFTS);
+  saveProgress();
+  buildTabs();
+  buildTable();
+}
+
 function copyWeek() {
   const target = prompt(`Copy Week ${currentWeek} to which week tab? (1-${TOTAL_WEEKS})`);
   if (target === null) return;
@@ -813,7 +944,7 @@ function buildTable() {
     const tr=document.createElement("tr");
     tr.className=`staff-row ${s.group}-row`;
 
-    let cells=`<td class="name-cell">${s.name}${s.offRota?'<span class="off-rota-note">off-rota</span>':''}</td>`;
+    let cells=`<td class="name-cell">${s.name}${s.offRota?` <span class="off-rota-note">${s.offRotaLabel||'off-rota'}</span>`:''}</td>`;
 
     DAYS.forEach((day,di) => {
       const dk=DAY_KEYS[di];
@@ -860,6 +991,16 @@ function recalcAll() {
 
   STAFF.forEach((s,idx) => {
     let total=s.offRota?s.contracted:0;
+    if (s.offRota) {
+      // Off-rota staff still count toward day totals via their standard daily pattern
+      DAYS.forEach((day,di) => {
+        const dh=(s.dayHrs||{})[DAY_KEYS[di]]||0;
+        if (dh>0) {
+          if (s.group==="pharmacy") dayTotPharm[di]+=dh;
+          else                      dayTotRetail[di]+=dh;
+        }
+      });
+    }
     if (!s.offRota) {
       DAYS.forEach((day,di) => {
         const dk=DAY_KEYS[di];
@@ -888,6 +1029,11 @@ function recalcAll() {
     }
   });
 
+  // Locum pharmacist cover (Sat & Sun) counts in Pharmacy totals
+  dayTotPharm[0] += LOCUM_PHARM.sun;
+  dayTotPharm[6] += LOCUM_PHARM.sat;
+  weekPharm += LOCUM_PHARM.sun + LOCUM_PHARM.sat;
+
   DAYS.forEach((_,di)=>{
     const p=document.getElementById(`daytot-pharmacy-${di}`);
     const r=document.getElementById(`daytot-retail-${di}`);
@@ -908,11 +1054,51 @@ function recalcAll() {
 }
 
 function updateSummary(pharm,retail) {
-  const total=pharm+retail, pd=pharm-ACI.pharmacy, rd=retail-ACI.retail, td=total-ACI.total;
+  const aci = getAci();
+  const total=pharm+retail, pd=pharm-aci.pharmacy, rd=retail-aci.retail, td=total-aci.total;
   document.getElementById("summary-footer").innerHTML=`
-    <div class="summary-card"><h3>Pharmacy Hours</h3><div class="big-num">${fmtHrs(pharm)}</div><div class="sub">ACI Base: ${ACI.pharmacy.toFixed(2)}h</div><div class="variance ${pd<=0?'var-under':'var-over'}">${fmtDiff(pd)}h vs base week</div></div>
-    <div class="summary-card"><h3>Retail Hours</h3><div class="big-num">${fmtHrs(retail)}</div><div class="sub">ACI Base: ${ACI.retail.toFixed(2)}h</div><div class="variance ${rd<=0?'var-under':'var-over'}">${fmtDiff(rd)}h vs base week</div></div>
-    <div class="summary-card"><h3>Total Store Hours</h3><div class="big-num">${fmtHrs(total)}</div><div class="sub">ACI Base: ${ACI.total.toFixed(2)}h</div><div class="variance ${td<=0?'var-under':'var-over'}">${fmtDiff(td)}h vs base week</div></div>`;
+    <div class="summary-card"><h3>Pharmacy Hours</h3><div class="big-num">${fmtHrs(pharm)}</div><div class="sub">ACI this week: ${aci.pharmacy.toFixed(2)}h</div><div class="variance ${pd<=0?'var-under':'var-over'}">${fmtDiff(pd)}h vs ACI</div></div>
+    <div class="summary-card"><h3>Retail Hours</h3><div class="big-num">${fmtHrs(retail)}</div><div class="sub">ACI this week: ${aci.retail.toFixed(2)}h</div><div class="variance ${rd<=0?'var-under':'var-over'}">${fmtDiff(rd)}h vs ACI</div></div>
+    <div class="summary-card"><h3>Total Store Hours</h3><div class="big-num">${fmtHrs(total)}</div><div class="sub">ACI this week: ${aci.total.toFixed(2)}h (${aci.src})</div><div class="variance ${td<=0?'var-under':'var-over'}">${fmtDiff(td)}h vs ACI</div></div>`;
+
+  updatePayrollBanner(pharm, retail, aci);
+}
+
+function updatePayrollBanner(pharm, retail, aci) {
+  const el = document.getElementById("payroll-banner");
+  if (!el) return;
+
+  // £ spend per group: staff at real rates on actual hours; locum estimate goes to Pharmacy
+  let phGBP = (LOCUM_PHARM.sun + LOCUM_PHARM.sat) * LOCUM_RATE_EST, rtGBP = 0;
+  STAFF.forEach(s => {
+    const cost = s.rate * getActualHours(s);
+    if (s.group === "pharmacy") phGBP += cost; else rtGBP += cost;
+  });
+
+  function seg(label, spendH, budgetH, spendG, budgetG) {
+    const dH = spendH - budgetH, dG = spendG - budgetG;
+    let status, border, col, bg;
+    if (Math.abs(dH) <= 0.5) { status = "EVEN";  border = "#eab308"; col = "#854d0e"; bg = "#fefce8"; }
+    else if (dH < 0)          { status = "UNDER"; border = "#16a34a"; col = "#166534"; bg = "#f0fdf4"; }
+    else                      { status = "OVER";  border = "#dc2626"; col = "#991b1b"; bg = "#fef2f2"; }
+    const detail = status === "EVEN" ? "On budget"
+      : (dH < 0 ? "Under" : "Over") + ` by ${Math.abs(dH).toFixed(2)}h / ${fmtGBP(Math.abs(dG))}`;
+    return `
+      <div style="background:${bg};border:1px solid ${border};border-left:5px solid ${border};border-radius:8px;padding:9px 14px;display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.5px;color:#6b7280;text-transform:uppercase;">${label}</span>
+          <span style="background:${border};color:white;font-weight:800;font-size:11px;padding:2px 10px;border-radius:20px;letter-spacing:0.5px;">${status}</span>
+        </div>
+        <div style="font-size:13px;color:${col};font-weight:700;">${detail}</div>
+        <div style="font-size:10px;color:#6b7280;">Spend ${spendH.toFixed(2)}h &asymp; ${fmtGBP(spendG)} &nbsp;|&nbsp; Budget ${budgetH.toFixed(2)}h &asymp; ${fmtGBP(budgetG)}</div>
+      </div>`;
+  }
+
+  el.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;";
+  el.innerHTML =
+    seg("Spend vs Budget ACI (Pharmacy)", pharm,  aci.pharmacy, phGBP,        aci.pharmacy * PH_RATE) +
+    seg("Spend vs Budget ACI (Retail)",   retail, aci.retail,   rtGBP,        aci.retail   * RT_RATE) +
+    seg("Spend vs Budget ACI (Total)",    pharm + retail, aci.total, phGBP + rtGBP, aci.pharmacy * PH_RATE + aci.retail * RT_RATE);
 }
 
 function buildTabs() {
@@ -935,6 +1121,15 @@ function buildTabs() {
     const wkLabel = bwNum ? `Wk ${bwNum}` : `Week ${w}`;
     btn.innerHTML = `<span style="font-size:10px;opacity:0.8;">${wkLabel}</span><br><span style="font-size:9px;">${dateLabel||"no date"}</span>`;
     btn.onclick = () => switchWeek(w);
+    btn.style.position = "relative";
+    if (TOTAL_WEEKS > 1) {
+      const x = document.createElement("span");
+      x.textContent = "\u00d7";
+      x.title = "Remove this week";
+      x.style.cssText = "position:absolute;top:-6px;right:-6px;width:15px;height:15px;line-height:13px;font-size:11px;background:#e2e8f0;color:#475569;border:1px solid #94a3b8;border-radius:50%;text-align:center;cursor:pointer;font-weight:700;";
+      x.onclick = (e) => { e.stopPropagation(); removeWeek(w); };
+      btn.appendChild(x);
+    }
     bar.appendChild(btn);
   }
   // "+" add week button
@@ -956,6 +1151,8 @@ function switchWeek(w) {
   const wd = weekDates[w];
   document.getElementById("week-date").value = wd || "";
   updateDateDisplay(wd);
+  populateBootsWkDropdown();
+  populateAciInputs();
   buildTable();
 }
 
@@ -1007,7 +1204,6 @@ const DEFAULT_SHIFTS = {
   "Saleeha":  {sat:"09:00-17:30"},
   "Sajida":   {sat:"08:00-16:30"},
   "Daisy":    {sun:"10:30-16:15"},
-  "Raza":     {mon:"08:00-16:30",tue:"08:00-16:30",wed:"08:00-16:30",thu:"08:00-16:30",fri:"08:00-16:30"},
 };
 
 // Deep copy helper
@@ -1017,18 +1213,80 @@ function copyShifts(src) {
   return out;
 }
 
-// Try loading saved progress first; fall back to 3 default weeks
+
+// The three printed rotas (Boots Wk 45-47), verified against the noticeboard day totals
+const WEEK_DEFAULTS = {
+  1: { // Boots Wk 45 -- w/c 5 Jul 2026
+    "Ammara":  {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"08:00-16:30",sat:"09:15-17:45"},
+    "Aisha":   {sun:"10:30-16:15",mon:"09:45-18:15"},
+    "Laura":   {mon:"09:30-14:45",tue:"09:30-13:00",wed:"09:30-18:00",thu:"09:30-13:00",fri:"H"},
+    "Michelle":{tue:"08:00-17:00",wed:"08:00-17:00",thu:"08:00-17:00"},
+    "Shabina": {mon:"08:00-18:15",fri:"09:00-17:30",sat:"08:00-12:30",partialH:"2.75"},
+    "Tayyba":  {mon:"08:00-16:30",wed:"08:00-16:30",fri:"09:45-18:00"},
+    "Yasin":   {sun:"UNPAID",sat:"13:00-17:00",partialH:"1.50"},
+    "Julie":   {mon:"H",tue:"H",wed:"H",thu:"H",fri:"H"},
+    "Charlotte":{mon:"08:30-17:30",fri:"08:30-17:30"},
+    "Shamsu":  {mon:"09:45-18:15",tue:"09:45-18:15"},
+    "Grace":   {sun:"10:30-16:00",fri:"09:45-18:15",sat:"08:00-16:30"},
+    "Theodore":{wed:"10:00-18:15",thu:"10:00-18:15",fri:"09:45-18:15"},
+    "Kashif":  {tue:"H",wed:"H",thu:"H",fri:"H"},
+    "Safa":    {sun:"10:30-16:15",tue:"09:45-18:15",wed:"08:00-16:30",sat:"09:15-17:45"},
+    "Saleeha": {thu:"09:45-18:15",sat:"09:00-17:30"},
+    "Sajida":  {sun:"10:30-16:15"},
+    "Daisy":   {sun:"H"},
+  },
+  2: { // Boots Wk 46 -- w/c 12 Jul 2026
+    "Ammara":  {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"08:00-16:30",sat:"09:15-17:45"},
+    "Aisha":   {sun:"H",mon:"09:45-18:15",fri:"09:45-18:15"},
+    "Laura":   {wed:"09:30-18:00",thu:"09:30-18:00",fri:"09:30-14:45",sat:"08:00-16:30"},
+    "Michelle":{tue:"08:00-17:00",wed:"08:00-17:00",thu:"08:00-17:00"},
+    "Shabina": {mon:"08:00-16:30",tue:"09:45-18:15",fri:"09:45-18:15"},
+    "Tayyba":  {sun:"10:30-16:00",sat:"H"},
+    "Yasin":   {sun:"11:00-15:00",sat:"H"},
+    "Julie":   {mon:"H",tue:"H",wed:"H",thu:"H",fri:"H"},
+    "Charlotte":{mon:"08:30-17:30",fri:"08:30-17:30"},
+    "Shamsu":  {mon:"09:45-18:15",tue:"09:45-18:15",wed:"09:00-17:30"},
+    "Grace":   {sun:"10:30-16:00",fri:"09:45-18:15"},
+    "Theodore":{wed:"10:00-18:15",thu:"10:00-18:15"},
+    "Kashif":  {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
+    "Safa":    {sun:"10:30-16:15",wed:"08:00-16:30",thu:"08:00-16:30",sat:"09:15-17:45"},
+    "Saleeha": {sat:"09:00-17:30"},
+    "Sajida":  {sat:"08:00-16:30"},
+    "Daisy":   {sun:"10:30-16:15"},
+  },
+  3: { // Boots Wk 47 -- w/c 19 Jul 2026
+    "Ammara":  {mon:"08:00-16:30",tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"08:00-16:30"},
+    "Aisha":   {sun:"10:30-16:15",mon:"09:45-18:15",fri:"09:45-18:15"},
+    "Laura":   {tue:"H",wed:"H",thu:"H"},
+    "Michelle":{wed:"08:00-17:00",thu:"08:00-17:00",sat:"09:15-18:15"},
+    "Shabina": {mon:"09:45-18:15",fri:"09:45-18:15",sat:"08:00-12:30",partialH:"3.00"},
+    "Tayyba":  {tue:"08:00-16:30",wed:"09:00-17:30",thu:"09:30-18:00"},
+    "Yasin":   {sun:"11:00-15:00",sat:"13:00-17:00"},
+    "Julie":   {mon:"08:00-16:30",tue:"08:00-16:30",wed:"08:00-16:30",thu:"08:00-16:30",fri:"08:00-16:30"},
+    "Charlotte":{mon:"08:30-17:30",fri:"08:30-17:30"},
+    "Shamsu":  {mon:"09:45-18:15",tue:"09:45-18:15",wed:"09:00-17:30"},
+    "Grace":   {sun:"10:30-16:00",fri:"09:45-18:15"},
+    "Theodore":{wed:"10:00-18:15",thu:"10:00-18:15"},
+    "Kashif":  {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
+    "Safa":    {sun:"10:30-16:15",sat:"09:15-17:45"},
+    "Saleeha": {sat:"09:00-17:30"},
+    "Sajida":  {sat:"H"},
+    "Daisy":   {sun:"10:30-16:15",sat:"08:00-16:30"},
+  },
+};
+
+// Try loading saved progress first; fall back to the three printed weeks
 const savedAt = loadProgress();
 if (!savedAt) {
-  for (let w = 1; w <= 3; w++) {
-    weekData[w]  = copyShifts(DEFAULT_SHIFTS);
-    weekDates[w] = "";
-  }
+  for (let w = 1; w <= 3; w++) weekData[w] = copyShifts(WEEK_DEFAULTS[w]);
+  weekDates     = { 1:"2026-07-05", 2:"2026-07-12", 3:"2026-07-19" };
+  bootsWeekNums = { 1:"45", 2:"46", 3:"47" };
   TOTAL_WEEKS = 3;
 }
 
 buildTabs();
 buildTable();
+populateAciInputs();
 const wd = weekDates[currentWeek];
 document.getElementById("week-date").value = wd || "";
 updateDateDisplay(wd);
@@ -1471,16 +1729,23 @@ function buildPdfHtmlForCurrentWeek() {
   // Gather current shift data
   const rows = [];
   document.querySelectorAll("tr.staff-row").forEach(tr => {
-    const name = tr.querySelector(".name-cell")?.textContent?.trim() || "";
-    const cells = [...tr.querySelectorAll(".shift-cell input:not(.partial-h-input), .shift-cell .off-rota-cell")];
-    const shifts = cells.map(el => el.value || el.textContent || "");
+    const nameCell = tr.querySelector(".name-cell");
+    const noteSpan = nameCell ? nameCell.querySelector(".off-rota-note") : null;
+    const is_off   = !!noteSpan;
+    const offLabel = noteSpan ? noteSpan.textContent.trim() : "";
+    const name     = nameCell ? (nameCell.childNodes[0]?.textContent || "").trim() : "";
+    // Exactly the first 7 shift-cells = Sun..Sat, one input each (8th is Part H)
+    const dayCells = [...tr.querySelectorAll("td.shift-cell")].slice(0, 7);
+    const shifts = dayCells.map(td => {
+      const inp = td.querySelector("input");
+      return inp && !inp.disabled ? (inp.value || "").trim() : "";
+    });
     const partialH = tr.querySelector(".partial-h-input")?.value?.trim() || "";
     const hours  = tr.querySelector(".hours-total-cell")?.textContent?.trim() || "";
     const diff   = tr.querySelector(".contracted-diff-cell")?.textContent?.trim() || "";
     const diff_cls = tr.querySelector(".contracted-diff-cell")?.className || "";
     const cont   = tr.querySelector(".contracted-cell")?.textContent?.trim() || "";
-    const is_off = name.includes("*");
-    rows.push({ name, shifts, partialH, hours, diff, diff_cls, cont, is_off });
+    rows.push({ name, shifts, partialH, hours, diff, diff_cls, cont, is_off, offLabel });
   });
 
   // Gather section labels, day totals, date row
@@ -1587,7 +1852,7 @@ function buildPdfHtmlForCurrentWeek() {
 
     const rowBg = ri < pharmCount ? "#fafcff" : "#fafffe";
     html += `<tr>`;
-    html += `<td style="padding:6px 6px;background:${rowBg};border:1px solid #c2c8d0;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name.replace(" *","")}</td>`;
+    html += `<td style="padding:6px 6px;background:${rowBg};border:1px solid #c2c8d0;font-weight:600;font-size:12px;color:#003865;white-space:nowrap;overflow:hidden;">${r.name}${r.is_off?` <span style="font-size:9px;color:#6b7280;font-weight:400;">(${r.offLabel||'off-rota'})</span>`:''}</td>`;
 
     r.shifts.slice(0,7).forEach((val, di) => {
       const bg    = val ? shiftBg(val, di) : (r.is_off ? "#f9f9f9" : rowBg);
@@ -1638,7 +1903,7 @@ function buildPdfHtmlForCurrentWeek() {
   return html;
 }
 
-function renderPdf(innerHtml, filename, btn, btnLabel, multiPage) {
+function renderPdf(innerHtml, filename, btn, btnLabel) {
   document.querySelectorAll(".pdf-render-container").forEach(el => el.remove());
 
   const container = document.createElement("div");
@@ -1654,7 +1919,6 @@ function renderPdf(innerHtml, filename, btn, btnLabel, multiPage) {
     html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: PDF_A4_W },
     jsPDF:       { unit: "mm", format: "a4", orientation: "landscape" }
   };
-  if (multiPage) opt.pagebreak = { mode: ["css", "legacy"] };
 
   html2pdf().set(opt).from(container.firstElementChild).save().then(() => {
     if (container.parentNode) container.remove();
@@ -1679,7 +1943,7 @@ function savePDF() {
   const filename  = `Store1478_Rota_${weekLabel.replace(/\s/g,"")}_${dateLabel.replace(/[^a-zA-Z0-9]/g,"_")||"draft"}.pdf`;
 
   const html = buildPdfHtmlForCurrentWeek();
-  renderPdf(html, filename, btn, "🗎 Save as PDF", false);
+  renderPdf(html, filename, btn, "🗎 Save as PDF");
 }
 
 function savePDFAllWeeks() {
@@ -1687,6 +1951,8 @@ function savePDFAllWeeks() {
   if (btn.disabled) return;
   btn.textContent = "⏳ Generating...";
   btn.disabled = true;
+
+  document.querySelectorAll(".pdf-render-container").forEach(el => el.remove());
 
   const origWeek = currentWeek;
   const pages = [];
@@ -1699,12 +1965,37 @@ function savePDFAllWeeks() {
     switchWeek(origWeek);
   }
 
-  const combined = pages
-    .map((p, i) => p + (i < pages.length - 1 ? `<div class="html2pdf__page-break"></div>` : ""))
-    .join("");
+  // Each week becomes its own element, rendered onto its own PDF page
+  const container = document.createElement("div");
+  container.className = "pdf-render-container";
+  container.style.cssText = "position:fixed;left:-9999px;top:0;z-index:-1;";
+  container.innerHTML = pages.map(p => `<div class="pdf-week-page">${p}</div>`).join("");
+  document.body.appendChild(container);
+  const pageEls = [...container.querySelectorAll(".pdf-week-page")];
 
   const stamp = new Date().toISOString().split("T")[0];
-  renderPdf(combined, `Store1478_Rota_AllWeeks_${stamp}.pdf`, btn, "🗎 All Weeks PDF", true);
+  const opt = {
+    margin:      [5, 5, 5, 5],
+    filename:    `Store1478_Rota_AllWeeks_${stamp}.pdf`,
+    image:       { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: PDF_A4_W },
+    jsPDF:       { unit: "mm", format: "a4", orientation: "landscape" }
+  };
+
+  function finish(ok) {
+    if (container.parentNode) container.remove();
+    btn.textContent = "🗎 All Weeks PDF";
+    btn.disabled = false;
+    if (!ok) alert("PDF generation failed. Make sure you are connected to the internet, then try again.");
+  }
+
+  // Worker chain: render week 1, then addPage + render each following week
+  let worker = html2pdf().set(opt).from(pageEls[0]).toPdf();
+  pageEls.slice(1).forEach(el => {
+    worker = worker.get("pdf").then(pdf => { pdf.addPage(); })
+                   .from(el).toContainer().toCanvas().toPdf();
+  });
+  worker.save().then(() => finish(true)).catch(() => finish(false));
 }
 </script>
 
