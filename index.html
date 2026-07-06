@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Store 1478 – Rota Generator</title>
+<title>Store 1478 · Rota</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23003865'/%3E%3Crect x='6' y='9' width='20' height='3' rx='1.5' fill='%2300827F'/%3E%3Crect x='6' y='15' width='14' height='3' rx='1.5' fill='white' opacity='.85'/%3E%3Crect x='6' y='21' width='17' height='3' rx='1.5' fill='white' opacity='.5'/%3E%3C/svg%3E">
 <style>
   :root {
     --boots-navy: #003865;
@@ -132,7 +133,7 @@
   @media print {
     body { background: white; padding: 4px; min-width: unset; font-size: 10px; }
     .page-header { border-radius: 0; padding: 6px 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .week-tabs, .week-date-row, .legend, .summary-footer, .help-text, #pay-panel, #payroll-banner, #coverage-panel, #keyholder-panel, #analysis-toggle-row { display: none !important; }
+    .week-tabs, .week-date-row, .legend, .summary-footer, .help-text, #pay-panel, #aci-table-panel, #payroll-banner, #coverage-panel, #keyholder-panel, #analysis-toggle-row { display: none !important; }
     .table-wrap { border: none; border-radius: 0; overflow: visible; }
     table { min-width: unset; width: 100%; }
 
@@ -161,6 +162,40 @@
     .shift-cell input.off-rota-cell { visibility: hidden; }
     .name-cell { font-size: 9px; padding: 3px 5px; }
   }
+  /* ── POLISH LAYER ─────────────────────────────────────────────── */
+  body { background: linear-gradient(180deg, #eaeff5 0%, #f0f4f8 240px); }
+  .page-header { background: linear-gradient(135deg, #002a4d 0%, #003865 55%, #06457e 100%); box-shadow: 0 2px 12px rgba(0, 40, 76, 0.20); }
+  .page-header h1 { font-size: 18px; letter-spacing: 0.2px; }
+
+  .tbtn { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 5px 11px; font-size: 11px; font-weight: 600; color: var(--boots-navy); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: box-shadow .12s, transform .12s, border-color .12s; }
+  .tbtn:hover:not(:disabled) { border-color: #94a3b8; box-shadow: 0 2px 6px rgba(15,23,42,0.12); transform: translateY(-1px); }
+  .tbtn:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+  .tbtn:disabled { opacity: 0.45; cursor: default; }
+  .tbtn:focus-visible { outline: 2px solid var(--boots-teal); outline-offset: 1px; }
+
+  /* Aligned numerals everywhere numbers stack */
+  table, .summary-card, #payroll-banner, #pay-panel, #aci-table-panel, #coverage-panel { font-variant-numeric: tabular-nums; }
+
+  .week-tab.active { box-shadow: 0 3px 8px rgba(0, 56, 101, 0.35); }
+  .week-tab { transition: background .12s, color .12s; }
+
+  .summary-card { border-radius: 10px; border: 1px solid #e3e8f0; box-shadow: 0 1px 3px rgba(15,23,42,0.06); transition: box-shadow .15s; }
+  .summary-card:hover { box-shadow: 0 4px 14px rgba(15,23,42,0.10); }
+
+  /* Sticky Name column while scrolling wide rotas */
+  .table-wrap { overflow-x: auto; }
+  .name-cell, .day-label-cell, thead tr.col-headers th:first-child, tr.date-row td:first-child, tr.notes-row td:first-child { position: sticky; left: 0; z-index: 3; }
+  .name-cell { background: #ffffff; box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
+  .day-label-cell { box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
+  thead tr.col-headers th:first-child { background: var(--boots-navy); }
+  tr.date-row td:first-child, tr.notes-row td:first-child { background: #1e3a5f; }
+  tr.notes-row td:first-child { background: #fbfcfe; }
+
+  /* Today marker (screen only, never prints) */
+  @media screen {
+    .today-col { background-color: #fff7e0 !important; }
+    thead tr.col-headers th.today-col { box-shadow: inset 0 -3px 0 #f59e0b; }
+  }
 </style>
 </head>
 <body>
@@ -186,14 +221,18 @@
 <div id="main-content" style="display:none;">
 
 <div class="page-header">
-  <h1>Store 1478 &mdash; Rota</h1>
+  <div>
+    <span style="display:block;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;opacity:0.55;font-weight:600;">Boots &middot; Manchester Didsbury</span>
+    <h1 style="line-height:1.15;">Store 1478 &mdash; Rota</h1>
+  </div>
   <div style="display:flex;align-items:center;gap:10px;">
+    <span id="backup-chip" onclick="exportBackup()" title="Download a backup file now" style="display:none;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;"></span>
     <span id="save-indicator" style="font-size:10px;opacity:0.5;transition:opacity 0.5s;color:white;"></span>
     <button onclick="clearProgress()" title="Clear this week's shifts only" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:11px;">Clear Week</button>
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-05-ripple</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-polish</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -223,12 +262,12 @@
     <span id="aci-total" style="font-size:10px;color:var(--muted);"></span>
   </span>
   <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-    <button onclick="copyWeek()" title="Copy this week's rota into another week tab" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128203; Copy Week</button>
-    <button id="undo-btn" onclick="undoLast()" disabled title="Undo the last change" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#8630; Undo</button>
-    <button onclick="savePDFAllWeeks()" id="pdf-all-btn" title="Save every week tab as one PDF" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#128462; All Weeks PDF</button>
-    <button onclick="exportBackup()" title="Download all rota data as a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#166534;cursor:pointer;">&#128190; Backup</button>
-    <button onclick="applyDefaultShifts()" title="Fill this week with the standard default shifts" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--boots-navy);cursor:pointer;">&#11088; Default Shifts</button>
-    <button onclick="importBackup()" title="Restore rota data from a backup file" style="background:white;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;color:#92400e;cursor:pointer;">&#128194; Restore</button>
+    <button onclick="copyWeek()" title="Copy this week's rota into another week tab" class="tbtn">&#128203; Copy Week</button>
+    <button id="undo-btn" onclick="undoLast()" disabled title="Undo the last change" class="tbtn">&#8630; Undo</button>
+    <button onclick="savePDFAllWeeks()" id="pdf-all-btn" title="Save every week tab as one PDF" class="tbtn">&#128462; All Weeks PDF</button>
+    <button onclick="exportBackup()" title="Download all rota data as a backup file" class="tbtn" style="color:#166534;">&#128190; Backup</button>
+    <button onclick="applyDefaultShifts()" title="Fill this week with the standard default shifts" class="tbtn">&#11088; Default Shifts</button>
+    <button onclick="importBackup()" title="Restore rota data from a backup file" class="tbtn" style="color:#92400e;">&#128194; Restore</button>
   </span>
 </div>
 
@@ -293,7 +332,7 @@
 
 <div class="summary-footer" id="summary-footer"></div>
 <div class="help-text">
-  Enter shifts as <strong>HH:MM-HH:MM</strong>. &nbsp;|&nbsp; <strong>H</strong> = Holiday (fixed daily hrs per person) &nbsp;|&nbsp; <strong>UNPAID</strong> = Unpaid Leave (zero hrs) &nbsp;|&nbsp; <strong>S</strong> = Sick (fixed daily hrs) &nbsp;|&nbsp; <strong>Part H</strong> = enter a number (e.g. 3.5) to top up a short day with holiday pay &nbsp;|&nbsp; Blank = day off. &nbsp;|&nbsp; Breaks: Sun &minus;30 min &nbsp;|&nbsp; Mon&ndash;Sat &gt;6h &minus;1 hr &nbsp;|&nbsp; Yasin no break. &nbsp;|&nbsp; <strong>Progress saves automatically.</strong>
+  Enter shifts as <strong>HH:MM-HH:MM</strong>. &nbsp;|&nbsp; <strong>H</strong> = Holiday (person's standard hours for that day) &nbsp;|&nbsp; <strong>UNPAID</strong> = Unpaid Leave (zero hrs) &nbsp;|&nbsp; <strong>S</strong> = Sick (standard hours for that day) &nbsp;|&nbsp; <strong>Part H</strong> = enter a number (e.g. 3.5) to top up a short day with holiday pay &nbsp;|&nbsp; Blank = day off. &nbsp;|&nbsp; Breaks: Sun &minus;30 min &nbsp;|&nbsp; Mon&ndash;Sat &gt;6h &minus;1 hr &nbsp;|&nbsp; Yasin no break. &nbsp;|&nbsp; <strong>Progress saves automatically.</strong>
 </div>
 
 <!-- PAY ANALYSIS PANEL -->
@@ -324,7 +363,18 @@
   </div>
   <div id="pay-summary-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px;margin-top:12px;"></div>
   <div style="font-size:10px;color:var(--muted);margin-top:8px;padding:6px 10px;background:#f8fafc;border-radius:4px;border-left:3px solid var(--boots-teal);">
-    Weekly Pay = actual hours this week &times; hourly rate. <strong>ED (Extra Duty)</strong> = any hours worked above contracted hours that week, at standard rate &times; ED hours, broken down by Pharmacy and Retail. Annual = contracted hours &times; rate &times; 52. Saira Naseem shown at £0.00 (salaried -- update rate manually).
+    Weekly Pay = actual hours this week &times; hourly rate. <strong>ED (Extra Duty)</strong> = any hours worked above contracted hours that week, at standard rate &times; ED hours, broken down by Pharmacy and Retail. Annual = contracted hours &times; rate &times; 52. Saira Naseem (salaried Pharmacy Technician) and locum agency fees are not in staff rates; the locum line below is an estimate at pharmacist rate.
+  </div>
+</div>
+
+<!-- WEEKLY ACI TABLE -->
+<div id="aci-table-panel" style="display:none;margin-top:16px;">
+  <div style="background:#00827F;color:white;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:15px;font-weight:700;">&#128202; Weekly ACI Base Hours (FY2026)</span>
+    <span style="font-size:11px;opacity:0.75;">&#9733; Wk 42 = default budget &nbsp;&middot;&nbsp; &#9664; = selected week tab</span>
+  </div>
+  <div style="background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:14px 16px;">
+    <div id="aci-table-body" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:8px;align-items:start;"></div>
   </div>
 </div>
 
@@ -366,7 +416,7 @@
 // Per-fiscal-week allocations from the FY2026 ACI Base Hours report (Power BI export).
 // retail = Assistants + Retail Management (37.50). Weeks not listed fall back to the
 // base week, and both figures can be overridden per week tab in the ACI boxes.
-const ACI_BASE_WEEK = { pharmacy: 216.50, retail: 199.75 }; // FY2026 base week (total 416.25)
+const ACI_DEFAULT_WEEK = 42; // benchmark week used as the default budget (the figures we always worked to)
 const ACI_TABLE = {
   1:{p:201.75,r:181.00},  2:{p:200.75,r:183.25},  3:{p:201.25,r:183.50},  4:{p:202.50,r:189.00},
   5:{p:228.00,r:189.00},  6:{p:226.75,r:187.75},  7:{p:221.00,r:183.50},  8:{p:217.25,r:188.00},
@@ -385,10 +435,8 @@ const ACI_TABLE = {
 let aciByWeek = {}; // manual overrides per week tab: { weekIndex: { p, r } }
 
 function autoAci() {
-  const bw = parseInt(bootsWeekNums[currentWeek]);
-  const t = ACI_TABLE[bw];
-  if (t) return { p: t.p, r: t.r, src: `Boots Wk ${bw} ACI` };
-  return { p: ACI_BASE_WEEK.pharmacy, r: ACI_BASE_WEEK.retail, src: "base week" };
+  const t = ACI_TABLE[ACI_DEFAULT_WEEK];
+  return { p: t.p, r: t.r, src: `Wk ${ACI_DEFAULT_WEEK} default` };
 }
 
 function getAci() {
@@ -553,10 +601,20 @@ function removeWeek(w) {
 }
 
 function addWeek() {
+  const last = TOTAL_WEEKS;
   TOTAL_WEEKS++;
   weekData[TOTAL_WEEKS] = copyShifts(DEFAULT_SHIFTS);
-  // Auto-set date based on week 1
-  weekDates[TOTAL_WEEKS] = sundayForWeek(TOTAL_WEEKS);
+  // Continue on from the previous week: date +7 days, Boots week +1 (wrapping at 52)
+  const prevDate = weekDates[last];
+  if (prevDate) {
+    const [y, m, d] = prevDate.split("-").map(Number);
+    const nd = new Date(y, m - 1, d + 7);
+    weekDates[TOTAL_WEEKS] = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}-${String(nd.getDate()).padStart(2,"0")}`;
+  } else {
+    weekDates[TOTAL_WEEKS] = "";
+  }
+  const prevBw = parseInt(bootsWeekNums[last]);
+  if (!isNaN(prevBw)) bootsWeekNums[TOTAL_WEEKS] = String((prevBw % 52) + 1);
   saveProgress();
   switchWeek(TOTAL_WEEKS);
 }
@@ -624,72 +682,14 @@ function normaliseShift(val) {
   return v; // return as-is if we can't parse it
 }
 
-function avgWorkedShiftHours(name, contracted, noBreak) {
-  // Calculate average net hours per actual worked shift this week
-  // This is used for H/S so it accurately reflects what the day is worth
-  const days = weekData[currentWeek][name] || {};
-  let totalHrs = 0, count = 0;
-  Object.entries(days).forEach(([dk, v]) => {
-    if (!v || !v.trim()) return;
-    const norm = normaliseShift(v.trim());
-    const ab = absenceType(norm);
-    if (ab) return; // skip H, S, UNPAID
-    const m = norm.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
-    if (!m) return;
-    const start = parseInt(m[1])*60 + parseInt(m[2]);
-    const end   = parseInt(m[3])*60 + parseInt(m[4]);
-    if (end <= start) return;
-    const gross = (end - start) / 60;
-    let net;
-    if (noBreak)         net = gross;
-    else if (dk==="sun") net = gross - 0.5;
-    else if (gross > 6)  net = gross - 1;
-    else                 net = gross;
-    totalHrs += net;
-    count++;
-  });
-  // If no worked shifts, fall back to contracted / total non-blank days
-  if (count === 0) {
-    const totalDays = Object.values(days).filter(v => {
-      if (!v || !v.trim()) return false;
-      return absenceType(v.trim().toUpperCase()) !== "UNPAID";
-    }).length;
-    return contracted / (totalDays || 1);
-  }
-  return totalHrs / count;
-}
-
 function holidayHours(name, day, contracted, dailyHrs, noBreak) {
-  // Use average of same-type shifts (Sun vs weekday/Sat) to get accurate H hours
-  const days = weekData[currentWeek][name] || {};
-  const isSunday = (day === "Sun");
-  let total = 0, count = 0;
-
-  Object.entries(days).forEach(([dk, v]) => {
-    if (!v || !v.trim()) return;
-    const norm = normaliseShift(v.trim());
-    const ab = absenceType(norm);
-    if (ab) return; // skip H, S, UNPAID
-    const m = norm.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
-    if (!m) return;
-    const shiftIsSun = (dk === "sun");
-    // Match day type: Sun H uses Sun shifts, weekday/Sat H uses weekday/Sat shifts
-    if (shiftIsSun !== isSunday) return;
-    const start = parseInt(m[1])*60 + parseInt(m[2]);
-    const end   = parseInt(m[3])*60 + parseInt(m[4]);
-    if (end <= start) return;
-    const gross = (end - start) / 60;
-    let net;
-    if (noBreak)       net = gross;
-    else if (shiftIsSun) net = gross - 0.5;
-    else if (gross > 6)  net = gross - 1;
-    else                 net = gross;
-    total += net; count++;
-  });
-
-  if (count > 0) return total / count;
-  // Fallback: use dailyHrs
-  return dailyHrs;
+  // A holiday or sick day is worth the standard shift it replaces:
+  // the person's usual hours for that weekday; if they don't normally
+  // work that day, their standard daily hours. Always quarter-hour clean.
+  const s = STAFF.find(x => x.name === name);
+  const dk = day.toLowerCase();
+  let hrs = (s && s.dayHrs && s.dayHrs[dk] > 0) ? s.dayHrs[dk] : dailyHrs;
+  return Math.round(hrs * 4) / 4;
 }
 
 function parseShift(val, day, noBreak, contracted, dailyHrs, name) {
@@ -789,6 +789,8 @@ function exportBackup() {
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    localStorage.setItem(BACKUP_TS_KEY, String(Date.now()));
+    updateBackupChip();
   } catch(e) { alert("Backup export failed: " + e.message); }
 }
 
@@ -998,6 +1000,37 @@ function buildTable() {
 
   populateNotes();
   recalcAll();
+  highlightToday();
+}
+
+function highlightToday() {
+  document.querySelectorAll(".today-col").forEach(el => el.classList.remove("today-col"));
+  const wd = weekDates[currentWeek];
+  if (!wd) return;
+  const [y, m, d] = wd.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const di = Math.round((today - start) / 86400000);
+  if (di < 0 || di > 6) return;
+  const col = di + 2; // col 1 = Name
+  document.querySelectorAll(
+    `.table-wrap thead tr.col-headers th:nth-child(${col}),` +
+    `.table-wrap tr.date-row td:nth-child(${col}),` +
+    `.table-wrap tr.notes-row td:nth-child(${col}),` +
+    `.table-wrap tr.staff-row td:nth-child(${col}),` +
+    `.table-wrap tr.day-total-row td:nth-child(${col})`
+  ).forEach(el => el.classList.add("today-col"));
+}
+
+const BACKUP_TS_KEY = "store1478_last_backup";
+function updateBackupChip() {
+  const chip = document.getElementById("backup-chip");
+  if (!chip) return;
+  const ts = parseInt(localStorage.getItem(BACKUP_TS_KEY) || "0");
+  const days = ts ? Math.floor((Date.now() - ts) / 86400000) : null;
+  if (ts && days <= 7) { chip.style.display = "none"; return; }
+  chip.style.display = "inline-block";
+  chip.textContent = ts ? `\u{1F4BE} Backup ${days}d old \u2013 click to save` : "\u{1F4BE} No backup yet \u2013 click to save";
 }
 
 function recalcAll() {
@@ -1302,6 +1335,7 @@ if (!savedAt) {
 buildTabs();
 buildTable();
 populateAciInputs();
+updateBackupChip();
 const wd = weekDates[currentWeek];
 document.getElementById("week-date").value = wd || "";
 updateDateDisplay(wd);
@@ -1313,9 +1347,35 @@ if (savedAt && typeof savedAt === "string") {
 // ── PAY ANALYSIS ──────────────────────────────────────────────────────────
 let payViewOpen = false;
 
+function buildAciTable() {
+  const box = document.getElementById("aci-table-body");
+  if (!box) return;
+  const cur = parseInt(bootsWeekNums[currentWeek]);
+  const groups = [[1,7],[8,14],[15,21],[22,28],[29,35],[36,42],[43,49],[50,52]];
+  box.innerHTML = groups.map(([a,b]) => {
+    let rows = "";
+    for (let wk = a; wk <= b; wk++) {
+      const t = ACI_TABLE[wk]; if (!t) continue;
+      const isDef = wk === ACI_DEFAULT_WEEK, isCur = wk === cur;
+      const bg = isDef ? "#fef3c7" : isCur ? "#dbeafe" : (wk % 2 ? "#ffffff" : "#f8fafc");
+      const fw = (isDef || isCur) ? "700" : "400";
+      rows += `<tr style="background:${bg};font-weight:${fw};">
+        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:center;white-space:nowrap;">${wk}${isDef?" \u2605":""}${isCur?" \u25c0":""}</td>
+        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;">${t.p.toFixed(2)}</td>
+        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;">${t.r.toFixed(2)}</td>
+        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;font-weight:600;">${(t.p+t.r).toFixed(2)}</td></tr>`;
+    }
+    return `<table style="border-collapse:collapse;font-size:10px;width:100%;">
+      <thead><tr style="background:#003865;color:white;"><th style="padding:3px 5px;">Wk</th><th style="padding:3px 5px;">Ph</th><th style="padding:3px 5px;">Rt</th><th style="padding:3px 5px;">Tot</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  }).join("");
+}
+
 function togglePayView() {
   payViewOpen = !payViewOpen;
   document.getElementById("pay-panel").style.display = payViewOpen ? "block" : "none";
+  document.getElementById("aci-table-panel").style.display = payViewOpen ? "block" : "none";
+  if (payViewOpen) buildAciTable();
   document.getElementById("pay-toggle-btn").style.background =
     payViewOpen ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.12)";
   if (payViewOpen) buildPayTable();
@@ -1350,6 +1410,27 @@ function buildPayTable() {
 
   STAFF.forEach(s => {
     if (s.group !== lastGroup) {
+      if (lastGroup === "pharmacy") {
+        // Locum pharmacist estimate row closes the pharmacy section
+        const locHrs  = LOCUM_PHARM.sun + LOCUM_PHARM.sat;
+        const locCost = locHrs * LOCUM_RATE_EST;
+        phWeekly += locCost; phActual += locHrs;
+        totWeekly += locCost; totActual += locHrs; totAnnual += locCost * 52;
+        const lr = document.createElement("tr");
+        lr.style.cssText = "border-bottom:1px solid #f1f5f9;font-style:italic;color:#6b7280;";
+        lr.innerHTML = `
+          <td style="padding:6px 12px;font-weight:600;color:#6b7280;">Locum Pharmacist <span style="font-size:9px;">(Sat+Sun est.)</span></td>
+          <td style="padding:6px 8px;text-align:center;font-size:11px;">Pharmacy</td>
+          <td style="padding:6px 8px;text-align:center;">£${LOCUM_RATE_EST.toFixed(2)}</td>
+          <td style="padding:6px 8px;text-align:center;">&ndash;</td>
+          <td style="padding:6px 8px;text-align:center;">${locHrs.toFixed(2)}h</td>
+          <td style="padding:6px 8px;text-align:center;font-weight:700;">£${locCost.toFixed(2)}</td>
+          <td style="padding:6px 8px;text-align:center;">&ndash;</td>
+          <td style="padding:6px 8px;text-align:center;">&ndash;</td>
+          <td style="padding:6px 8px;text-align:center;">£${(locCost*52).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          <td style="padding:6px 8px;text-align:center;">&ndash;</td>`;
+        tbody.appendChild(lr);
+      }
       lastGroup = s.group;
       const sr = document.createElement("tr");
       sr.innerHTML = `<td colspan="10" style="background:${s.group==='pharmacy'?'#003865':'#00827F'};color:white;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:0.5px;">${s.group==='pharmacy'?'⚕ PHARMACY':'🛍 RETAIL'}</td>`;
@@ -1561,6 +1642,9 @@ function buildCoverageAnalysis() {
   const restFlags = buildRestChecks();
   allFlags.push(...restFlags);
 
+  const wtdFlags = buildWtdChecks();
+  allFlags.push(...wtdFlags);
+
   // Render flags, red first then amber then info
   const order = { red:0, amber:1, info:2 };
   allFlags.sort((a,b) => order[a.level]-order[b.level]);
@@ -1612,6 +1696,34 @@ function buildRestChecks() {
     }
   });
 
+  return flags;
+}
+
+function buildWtdChecks() {
+  // Working Time: flag anyone rostered all 7 days, 6 consecutive days,
+  // or over 48 worked hours in the week (holiday/sick days do not count as work).
+  const flags = [];
+  STAFF.forEach(s => {
+    if (s.offRota) return;
+    const worked = DAY_KEYS.map(dk => {
+      const raw = ((weekData[currentWeek][s.name] || {})[dk] || "").trim();
+      if (!raw) return 0;
+      const norm = normaliseShift(raw);
+      if (absenceType(norm)) return 0;
+      const m = norm.match(/^(\d{1,2}):(\d{2})\s*[-\u2013]\s*(\d{1,2}):(\d{2})$/);
+      if (!m) return 0;
+      const g = (parseInt(m[3]) * 60 + parseInt(m[4]) - parseInt(m[1]) * 60 - parseInt(m[2])) / 60;
+      if (g <= 0) return 0;
+      if (s.noBreak) return g;
+      if (dk === "sun") return g - 0.5;
+      return g > 6 ? g - 1 : g;
+    });
+    let run = 0, maxRun = 0, totalHrs = 0;
+    worked.forEach(h => { totalHrs += h; run = h > 0 ? run + 1 : 0; if (run > maxRun) maxRun = run; });
+    if (maxRun >= 7) flags.push({ level: "red", text: `${s.name}: rostered to work all 7 days this week — Working Time rules require a weekly rest day.` });
+    else if (maxRun >= 6) flags.push({ level: "amber", text: `${s.name}: works 6 consecutive days this week — check the adjacent weeks give a proper rest day.` });
+    if (totalHrs > 48) flags.push({ level: "amber", text: `${s.name}: ${totalHrs.toFixed(2)}h worked this week — above the 48h Working Time average; fine occasionally but keep an eye on the run of weeks.` });
+  });
   return flags;
 }
 
@@ -1724,7 +1836,7 @@ function buildKeyHolderSuggestions() {
 const _baseRecalc = recalcAll;
 recalcAll = function() {
   _baseRecalc();
-  if (payViewOpen) buildPayTable();
+  if (payViewOpen) { buildPayTable(); buildAciTable(); }
   if (analysisViewOpen) { buildCoverageAnalysis(); buildKeyHolderSuggestions(); }
 };
 </script>
