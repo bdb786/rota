@@ -193,7 +193,7 @@
 
   /* Today marker (screen only, never prints) */
   @media screen {
-    .today-col { background-color: #fff7e0 !important; }
+    tr.staff-row td.today-col { background-color: #fffdf0; }
     thead tr.col-headers th.today-col { box-shadow: inset 0 -3px 0 #f59e0b; }
   }
 </style>
@@ -232,7 +232,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-polish</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-fix3</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -374,7 +374,7 @@
     <span style="font-size:11px;opacity:0.75;">&#9733; Wk 42 = default budget &nbsp;&middot;&nbsp; &#9664; = selected week tab</span>
   </div>
   <div style="background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:14px 16px;">
-    <div id="aci-table-body" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:8px;align-items:start;"></div>
+    <div id="aci-table-body" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(440px, 1fr));gap:14px;align-items:start;"></div>
   </div>
 </div>
 
@@ -1015,10 +1015,7 @@ function highlightToday() {
   const col = di + 2; // col 1 = Name
   document.querySelectorAll(
     `.table-wrap thead tr.col-headers th:nth-child(${col}),` +
-    `.table-wrap tr.date-row td:nth-child(${col}),` +
-    `.table-wrap tr.notes-row td:nth-child(${col}),` +
-    `.table-wrap tr.staff-row td:nth-child(${col}),` +
-    `.table-wrap tr.day-total-row td:nth-child(${col})`
+    `.table-wrap tr.staff-row td:nth-child(${col})`
   ).forEach(el => el.classList.add("today-col"));
 }
 
@@ -1116,6 +1113,10 @@ function updatePayrollBanner(pharm, retail, aci) {
   const el = document.getElementById("payroll-banner");
   if (!el) return;
 
+  // The over/under/even verdict is ALWAYS against the Week 42 benchmark
+  const b42 = ACI_TABLE[ACI_DEFAULT_WEEK];
+  aci = { pharmacy: b42.p, retail: b42.r, total: b42.p + b42.r };
+
   // £ spend per group: staff at real rates on actual hours; locum estimate goes to Pharmacy
   let phGBP = (LOCUM_PHARM.sun + LOCUM_PHARM.sat) * LOCUM_RATE_EST, rtGBP = 0;
   STAFF.forEach(s => {
@@ -1144,9 +1145,9 @@ function updatePayrollBanner(pharm, retail, aci) {
 
   el.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;";
   el.innerHTML =
-    seg("Spend vs Budget ACI (Pharmacy)", pharm,  aci.pharmacy, phGBP,        aci.pharmacy * PH_RATE) +
-    seg("Spend vs Budget ACI (Retail)",   retail, aci.retail,   rtGBP,        aci.retail   * RT_RATE) +
-    seg("Spend vs Budget ACI (Total)",    pharm + retail, aci.total, phGBP + rtGBP, aci.pharmacy * PH_RATE + aci.retail * RT_RATE);
+    seg("Pharmacy &middot; vs Wk 42 ACI", pharm,  aci.pharmacy, phGBP,        aci.pharmacy * PH_RATE) +
+    seg("Retail &middot; vs Wk 42 ACI",   retail, aci.retail,   rtGBP,        aci.retail   * RT_RATE) +
+    seg("Total &middot; vs Wk 42 ACI",    pharm + retail, aci.total, phGBP + rtGBP, aci.pharmacy * PH_RATE + aci.retail * RT_RATE);
 }
 
 function buildTabs() {
@@ -1351,22 +1352,36 @@ function buildAciTable() {
   const box = document.getElementById("aci-table-body");
   if (!box) return;
   const cur = parseInt(bootsWeekNums[currentWeek]);
-  const groups = [[1,7],[8,14],[15,21],[22,28],[29,35],[36,42],[43,49],[50,52]];
-  box.innerHTML = groups.map(([a,b]) => {
+  const groups = [[1, 26], [27, 52]];
+  box.innerHTML = groups.map(([a, b]) => {
     let rows = "";
     for (let wk = a; wk <= b; wk++) {
       const t = ACI_TABLE[wk]; if (!t) continue;
       const isDef = wk === ACI_DEFAULT_WEEK, isCur = wk === cur;
       const bg = isDef ? "#fef3c7" : isCur ? "#dbeafe" : (wk % 2 ? "#ffffff" : "#f8fafc");
       const fw = (isDef || isCur) ? "700" : "400";
+      const tot = t.p + t.r;
       rows += `<tr style="background:${bg};font-weight:${fw};">
-        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:center;white-space:nowrap;">${wk}${isDef?" \u2605":""}${isCur?" \u25c0":""}</td>
-        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;">${t.p.toFixed(2)}</td>
-        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;">${t.r.toFixed(2)}</td>
-        <td style="padding:2px 5px;border:1px solid #e5e7eb;text-align:right;font-weight:600;">${(t.p+t.r).toFixed(2)}</td></tr>`;
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:center;white-space:nowrap;">${wk}${isDef ? " \u2605" : ""}${isCur ? " \u25c0" : ""}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;">${t.p.toFixed(2)}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;color:#166534;">${fmtGBP(t.p * PH_RATE)}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;">${t.r.toFixed(2)}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;color:#166534;">${fmtGBP(t.r * RT_RATE)}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;font-weight:600;">${tot.toFixed(2)}</td>
+        <td style="padding:2px 7px;border:1px solid #e5e7eb;text-align:right;font-weight:600;color:#166534;">${fmtGBP(t.p * PH_RATE + t.r * RT_RATE)}</td></tr>`;
     }
-    return `<table style="border-collapse:collapse;font-size:10px;width:100%;">
-      <thead><tr style="background:#003865;color:white;"><th style="padding:3px 5px;">Wk</th><th style="padding:3px 5px;">Ph</th><th style="padding:3px 5px;">Rt</th><th style="padding:3px 5px;">Tot</th></tr></thead>
+    return `<table style="border-collapse:collapse;font-size:10.5px;width:100%;">
+      <thead>
+        <tr style="background:#003865;color:white;">
+          <th style="padding:4px 7px;">Wk</th>
+          <th style="padding:4px 7px;text-align:right;">Pharmacy&nbsp;h</th>
+          <th style="padding:4px 7px;text-align:right;">Pharmacy&nbsp;&pound;</th>
+          <th style="padding:4px 7px;text-align:right;">Retail&nbsp;h</th>
+          <th style="padding:4px 7px;text-align:right;">Retail&nbsp;&pound;</th>
+          <th style="padding:4px 7px;text-align:right;">Total&nbsp;h</th>
+          <th style="padding:4px 7px;text-align:right;">Total&nbsp;&pound;</th>
+        </tr>
+      </thead>
       <tbody>${rows}</tbody></table>`;
   }).join("");
 }
