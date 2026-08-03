@@ -232,7 +232,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-fix3</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-team</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -262,6 +262,7 @@
     <span id="aci-total" style="font-size:10px;color:var(--muted);"></span>
   </span>
   <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+    <button onclick="openStaffManager()" title="Add, edit or remove team members" class="tbtn">&#128101; Team</button>
     <button onclick="copyWeek()" title="Copy this week's rota into another week tab" class="tbtn">&#128203; Copy Week</button>
     <button id="undo-btn" onclick="undoLast()" disabled title="Undo the last change" class="tbtn">&#8630; Undo</button>
     <button onclick="savePDFAllWeeks()" id="pdf-all-btn" title="Save every week tab as one PDF" class="tbtn">&#128462; All Weeks PDF</button>
@@ -269,6 +270,24 @@
     <button onclick="applyDefaultShifts()" title="Fill this week with the standard default shifts" class="tbtn">&#11088; Default Shifts</button>
     <button onclick="importBackup()" title="Restore rota data from a backup file" class="tbtn" style="color:#92400e;">&#128194; Restore</button>
   </span>
+</div>
+
+<!-- TEAM MANAGER -->
+<div id="staff-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9998;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;">
+  <div style="background:white;border-radius:10px;width:100%;max-width:900px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="background:var(--boots-navy);color:white;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:15px;font-weight:700;">&#128101; Team</span>
+      <button onclick="closeStaffManager()" class="tbtn" style="background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.35);color:white;">Done</button>
+    </div>
+    <div style="padding:16px 20px;">
+      <div id="staff-list"></div>
+      <div id="staff-form" style="display:none;margin-top:14px;padding:14px 16px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;"></div>
+      <button onclick="newStaffMember()" id="staff-add-btn" class="tbtn" style="margin-top:12px;">&#10133; Add team member</button>
+      <div style="font-size:10px;color:var(--muted);margin-top:12px;padding:8px 10px;background:#f8fafc;border-radius:4px;border-left:3px solid var(--boots-teal);">
+        Marking someone as left keeps their shifts on saved weeks and takes them off the rota from now on. Deleting removes them and their shifts everywhere. Undo reverses either.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- PAYROLL SPEND SUMMARY -->
@@ -484,7 +503,7 @@ function onAciChange() {
   recalcAll();
 }
 
-const STAFF = [
+const DEFAULT_STAFF = [
   { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:7.50, tue:0,    wed:7.50, thu:7.50, fri:7.50, sat:7.50} },
   { name:"Aisha",    group:"pharmacy", contracted:20.25, dailyHrs:6.75, offRota:false, rate:13.92,
@@ -530,8 +549,16 @@ const STAFF = [
 const LOCUM_PHARM = { sun: 4.50, sat: 8.00 };
 const LOCUM_RATE_EST = 20.14; // pharmacist rate used as locum cost estimate
 
-PH_RATE = groupBlendedRate("pharmacy");
-RT_RATE = groupBlendedRate("retail");
+// STAFF_ALL holds everyone including leavers; STAFF is the active team used everywhere else.
+let STAFF_ALL = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+let STAFF = [];
+
+function refreshStaff() {
+  STAFF = STAFF_ALL.filter(s => !s.left);
+  PH_RATE = groupBlendedRate("pharmacy");
+  RT_RATE = groupBlendedRate("retail");
+}
+refreshStaff();
 
 let TOTAL_WEEKS = 3;
 
@@ -726,7 +753,7 @@ let weekNotes = {}; // { weekIndex: { sun:"", mon:"", ... } }
 
 function saveProgress() {
   try {
-    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     const el = document.getElementById("save-indicator");
     if (el) { el.textContent = "✓ Saved " + data.savedAt; el.style.opacity=1; setTimeout(()=>el.style.opacity=0.5, 2000); }
@@ -760,6 +787,7 @@ function loadProgress() {
     if (data.aciByWeek)     aciByWeek     = data.aciByWeek;
     if (data.bootsWeekNums) bootsWeekNums = data.bootsWeekNums;
     if (data.totalWeeks)    TOTAL_WEEKS   = data.totalWeeks;
+    if (data.staffAll && data.staffAll.length) { STAFF_ALL = data.staffAll; refreshStaff(); }
     migrateStaffRenames();
     return data.savedAt || true;
   } catch(e) { return false; }
@@ -779,7 +807,7 @@ function clearProgress() {
 // ── BACKUP EXPORT / IMPORT ──────────────────────────────────────────────────
 function exportBackup() {
   try {
-    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS,
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, totalWeeks: TOTAL_WEEKS,
                    exportedAt: new Date().toISOString(), tool: "store1478-rota" };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -815,6 +843,7 @@ function importBackup() {
         weekNotes     = data.weekNotes     || {};
         aciByWeek     = data.aciByWeek     || {};
         bootsWeekNums = data.bootsWeekNums || {};
+        if (data.staffAll && data.staffAll.length) { STAFF_ALL = data.staffAll; refreshStaff(); }
         TOTAL_WEEKS   = data.totalWeeks    || 3;
         migrateStaffRenames();
         currentWeek = 1;
@@ -834,7 +863,7 @@ let undoStack = [];
 
 function pushUndoSnapshot() {
   try {
-    undoStack.push(JSON.stringify({ weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, totalWeeks: TOTAL_WEEKS, currentWeek }));
+    undoStack.push(JSON.stringify({ weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, totalWeeks: TOTAL_WEEKS, currentWeek }));
     if (undoStack.length > 20) undoStack.shift();
     const btn = document.getElementById("undo-btn");
     if (btn) btn.disabled = false;
@@ -850,6 +879,7 @@ function undoLast() {
     weekNotes = snap.weekNotes || {};
     aciByWeek = snap.aciByWeek || {};
     if (snap.bootsWeekNums) bootsWeekNums = snap.bootsWeekNums;
+    if (snap.staffAll && snap.staffAll.length) { STAFF_ALL = snap.staffAll; refreshStaff(); }
     if (snap.totalWeeks)    TOTAL_WEEKS   = snap.totalWeeks;
     currentWeek = Math.min(snap.currentWeek || currentWeek, TOTAL_WEEKS);
     saveProgress();
@@ -1846,6 +1876,191 @@ function buildKeyHolderSuggestions() {
       <tbody>${rowsHtml}</tbody>
     </table>
     <div style="font-size:9px;color:#6b7280;margin-top:8px;">⭐ = earliest starter / latest finisher that day (most likely candidate). PH = Pharmacy, RT = Retail.</div>`;
+}
+
+
+// ── TEAM MANAGER ────────────────────────────────────────────────────────────
+let staffEditIndex = null; // index into STAFF_ALL, or null when adding
+
+function openStaffManager() {
+  document.getElementById("staff-modal").style.display = "flex";
+  document.getElementById("staff-form").style.display = "none";
+  renderStaffList();
+}
+
+function closeStaffManager() {
+  document.getElementById("staff-modal").style.display = "none";
+}
+
+function dayPatternLabel(s) {
+  const names = { sun:"Sun", mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat" };
+  const on = DAY_KEYS.filter(dk => (s.dayHrs || {})[dk] > 0).map(dk => names[dk]);
+  return on.length ? on.join(", ") : "\u2013";
+}
+
+function renderStaffList() {
+  const box = document.getElementById("staff-list");
+  const groups = [["pharmacy", "\u2695 Pharmacy"], ["retail", "\u{1F6CD} Retail"]];
+  let html = "";
+
+  groups.forEach(([g, label]) => {
+    const rows = STAFF_ALL.map((s, i) => ({ s, i })).filter(x => x.s.group === g);
+    if (!rows.length) return;
+    html += `<div style="font-size:11px;font-weight:700;color:${g==='pharmacy'?'#003865':'#00827F'};text-transform:uppercase;letter-spacing:0.5px;margin:12px 0 6px;">${label}</div>
+      <table style="border-collapse:collapse;width:100%;font-size:12px;">
+        <thead><tr style="background:#f1f5f9;color:var(--boots-navy);">
+          <th style="padding:5px 8px;text-align:left;">Name</th>
+          <th style="padding:5px 8px;text-align:right;">Contracted</th>
+          <th style="padding:5px 8px;text-align:right;">Rate</th>
+          <th style="padding:5px 8px;text-align:left;">Normal days</th>
+          <th style="padding:5px 8px;"></th>
+        </tr></thead><tbody>`;
+    rows.forEach(({ s, i }) => {
+      const dim = s.left ? "opacity:0.5;" : "";
+      html += `<tr style="border-bottom:1px solid #f1f5f9;${dim}">
+        <td style="padding:6px 8px;font-weight:600;color:var(--boots-navy);">${s.name}
+          ${s.left ? '<span style="font-size:9px;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:10px;margin-left:5px;">left</span>' : ''}
+          ${s.offRota ? `<span style="font-size:9px;color:var(--boots-teal);margin-left:5px;">${s.offRotaLabel || 'off-rota'}</span>` : ''}
+          ${s.noBreak ? '<span style="font-size:9px;color:var(--muted);margin-left:5px;">no break</span>' : ''}</td>
+        <td style="padding:6px 8px;text-align:right;">${s.contracted.toFixed(2)}h</td>
+        <td style="padding:6px 8px;text-align:right;">\u00a3${(s.rate||0).toFixed(2)}</td>
+        <td style="padding:6px 8px;color:var(--muted);font-size:11px;">${dayPatternLabel(s)}</td>
+        <td style="padding:6px 8px;text-align:right;white-space:nowrap;">
+          <button onclick="editStaffMember(${i})" class="tbtn" style="padding:3px 8px;font-size:10px;">Edit</button>
+          ${s.left
+            ? `<button onclick="rejoinStaffMember(${i})" class="tbtn" style="padding:3px 8px;font-size:10px;color:#166534;">Rejoined</button>`
+            : `<button onclick="markStaffLeft(${i})" class="tbtn" style="padding:3px 8px;font-size:10px;color:#92400e;">Left</button>`}
+          <button onclick="deleteStaffMember(${i})" class="tbtn" style="padding:3px 8px;font-size:10px;color:#991b1b;">Delete</button>
+        </td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+
+  box.innerHTML = html || '<div style="color:var(--muted);font-size:12px;">No team members yet.</div>';
+}
+
+function newStaffMember() { staffEditIndex = null; renderStaffForm(null); }
+function editStaffMember(i) { staffEditIndex = i; renderStaffForm(STAFF_ALL[i]); }
+
+function renderStaffForm(s) {
+  const f = document.getElementById("staff-form");
+  const names = { sun:"Sun", mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat" };
+  const dh = (s && s.dayHrs) || {};
+  const inp = "border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:12px;width:100%;";
+  const lbl = "display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:3px;font-weight:600;";
+
+  f.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--boots-navy);margin-bottom:12px;">${s ? "Edit " + s.name : "Add team member"}</div>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div><label style="${lbl}">Name</label><input id="sf-name" type="text" style="${inp}" value="${s ? s.name.replace(/"/g,'&quot;') : ''}" placeholder="First name"></div>
+      <div><label style="${lbl}">Team</label><select id="sf-group" style="${inp}">
+        <option value="pharmacy"${s && s.group==='pharmacy'?' selected':''}>Pharmacy</option>
+        <option value="retail"${!s || s.group==='retail'?' selected':''}>Retail</option></select></div>
+      <div><label style="${lbl}">Contracted h</label><input id="sf-contracted" type="number" step="0.25" min="0" style="${inp}" value="${s ? s.contracted : ''}" placeholder="30.00"></div>
+      <div><label style="${lbl}">Rate \u00a3/h</label><input id="sf-rate" type="number" step="0.01" min="0" style="${inp}" value="${s ? s.rate : ''}" placeholder="13.02"></div>
+    </div>
+    <label style="${lbl}">Normal working days &mdash; hours per day (used for holiday and sick cover)</label>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:12px;">
+      ${DAY_KEYS.map(dk => `<div style="text-align:center;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">${names[dk]}</div>
+        <input id="sf-day-${dk}" type="number" step="0.25" min="0" max="14" style="${inp}text-align:center;padding:5px 2px;" value="${dh[dk] > 0 ? dh[dk] : ''}" placeholder="0">
+      </div>`).join("")}
+    </div>
+    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-size:12px;">
+      <label style="display:flex;gap:5px;align-items:center;cursor:pointer;"><input id="sf-nobreak" type="checkbox"${s && s.noBreak ? ' checked':''}> Never deduct a break</label>
+      <label style="display:flex;gap:5px;align-items:center;cursor:pointer;"><input id="sf-offrota" type="checkbox"${s && s.offRota ? ' checked':''} onchange="document.getElementById('sf-offlabel-wrap').style.display=this.checked?'block':'none'"> Off rota (hide shifts, count contracted hours)</label>
+      <div id="sf-offlabel-wrap" style="display:${s && s.offRota ? 'block':'none'};"><input id="sf-offlabel" type="text" style="${inp}width:180px;" value="${s && s.offRotaLabel ? s.offRotaLabel.replace(/"/g,'&quot;') : ''}" placeholder="Label e.g. Off Rota"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveStaffMember()" class="tbtn" style="background:var(--boots-navy);color:white;border-color:var(--boots-navy);">Save</button>
+      <button onclick="document.getElementById('staff-form').style.display='none'" class="tbtn">Cancel</button>
+    </div>`;
+  f.style.display = "block";
+  if (f.scrollIntoView) f.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  document.getElementById("sf-name").focus();
+}
+
+function saveStaffMember() {
+  const name = document.getElementById("sf-name").value.trim();
+  const contracted = parseFloat(document.getElementById("sf-contracted").value);
+  const rate = parseFloat(document.getElementById("sf-rate").value);
+
+  if (!name) { alert("Enter a name."); return; }
+  if (isNaN(contracted) || contracted <= 0) { alert("Enter the contracted hours per week."); return; }
+  if (isNaN(rate) || rate <= 0) { alert("Enter the hourly rate."); return; }
+  const clash = STAFF_ALL.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
+  if (clash !== -1 && clash !== staffEditIndex) { alert(`There is already a team member called ${name}. Use a different name, for example ${name} B.`); return; }
+
+  const dayHrs = {}; let workDays = 0;
+  DAY_KEYS.forEach(dk => {
+    const v = parseFloat(document.getElementById("sf-day-" + dk).value);
+    dayHrs[dk] = (!isNaN(v) && v > 0) ? Math.round(v * 4) / 4 : 0;
+    if (dayHrs[dk] > 0) workDays++;
+  });
+
+  const offRota = document.getElementById("sf-offrota").checked;
+  const rec = {
+    name,
+    group: document.getElementById("sf-group").value,
+    contracted: Math.round(contracted * 4) / 4,
+    dailyHrs: Math.round((contracted / (workDays || 5)) * 4) / 4,
+    offRota,
+    rate: Math.round(rate * 100) / 100,
+    dayHrs,
+    noBreak: document.getElementById("sf-nobreak").checked,
+  };
+  if (offRota) rec.offRotaLabel = (document.getElementById("sf-offlabel").value.trim() || "Off Rota");
+
+  pushUndoSnapshot();
+
+  if (staffEditIndex === null) {
+    // Insert at the end of their team block so the rota stays grouped
+    const lastOfGroup = STAFF_ALL.map((s, i) => s.group === rec.group ? i : -1).filter(i => i >= 0).pop();
+    if (lastOfGroup === undefined) STAFF_ALL.push(rec);
+    else STAFF_ALL.splice(lastOfGroup + 1, 0, rec);
+  } else {
+    const oldName = STAFF_ALL[staffEditIndex].name;
+    rec.left = STAFF_ALL[staffEditIndex].left;
+    if (oldName !== name) {
+      // Carry their saved shifts across to the new name
+      Object.keys(weekData).forEach(w => {
+        if (weekData[w] && weekData[w][oldName]) {
+          weekData[w][name] = weekData[w][oldName];
+          delete weekData[w][oldName];
+        }
+      });
+    }
+    STAFF_ALL[staffEditIndex] = rec;
+  }
+
+  refreshStaff();
+  saveProgress();
+  document.getElementById("staff-form").style.display = "none";
+  renderStaffList();
+  buildTable();
+}
+
+function markStaffLeft(i) {
+  const s = STAFF_ALL[i];
+  if (!confirm(`Mark ${s.name} as left? They come off the rota from now on, and their shifts stay on any weeks already saved.`)) return;
+  pushUndoSnapshot();
+  STAFF_ALL[i].left = true;
+  refreshStaff(); saveProgress(); renderStaffList(); buildTable();
+}
+
+function rejoinStaffMember(i) {
+  pushUndoSnapshot();
+  delete STAFF_ALL[i].left;
+  refreshStaff(); saveProgress(); renderStaffList(); buildTable();
+}
+
+function deleteStaffMember(i) {
+  const s = STAFF_ALL[i];
+  if (!confirm(`Delete ${s.name} and all of their shifts from every week? Undo reverses this.`)) return;
+  pushUndoSnapshot();
+  Object.keys(weekData).forEach(w => { if (weekData[w]) delete weekData[w][s.name]; });
+  STAFF_ALL.splice(i, 1);
+  refreshStaff(); saveProgress(); renderStaffList(); buildTable();
 }
 
 const _baseRecalc = recalcAll;
