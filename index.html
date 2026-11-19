@@ -232,7 +232,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-11-19-payroll</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-11-19-patterns3</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -507,22 +507,22 @@ const DEFAULT_STAFF = [
   // ── PHARMACY ──────────────────────────────────────────────────────────────
   { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:7.50, tue:0,    wed:7.50, thu:7.50, fri:7.50, sat:7.50} },
-  { name:"Nadin",    group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+  { name:"Nadin",    group:"pharmacy", contracted:30.00, dailyHrs:7.50, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
   { name:"Michelle", group:"pharmacy", contracted:24.00, dailyHrs:8.00, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:0,    tue:8.00, wed:8.00, thu:8.00, fri:0,    sat:0   } },
   { name:"Laura",    group:"pharmacy", contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:0,    sat:0   } },
   { name:"Shabina",  group:"pharmacy", contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:0,    thu:0,    fri:7.50, sat:0   } },
-  { name:"Samina",   group:"pharmacy", contracted:16.50, dailyHrs:8.25, offRota:false, rate:27.59,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Kourosh",  group:"pharmacy", contracted:12.75, dailyHrs:6.38, offRota:false, rate:13.92,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+    dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
   { name:"Yasin",    group:"pharmacy", contracted:8.00,  dailyHrs:4.00, offRota:false, noBreak:true, rate:13.92,
     dayHrs:{sun:4.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:4.00} },
   { name:"Manar",    group:"pharmacy", contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.92,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+  { name:"Vix",      group:"pharmacy", contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:7.50, tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Saira",    group:"pharmacy", contracted:0.00,  dailyHrs:7.50, offRota:false, rate:14.80,
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Dom",      group:"pharmacy", contracted:42.25, dailyHrs:8.45, offRota:true,  rate:20.87, offRotaLabel:"Pharmacist Off Rota",
@@ -537,19 +537,19 @@ const DEFAULT_STAFF = [
   { name:"Julie",    group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.12,
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
   { name:"Kashif",   group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
+    dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },  // Mon-Fri
   { name:"Charlotte",group:"retail",   contracted:16.00, dailyHrs:8.00, offRota:false, rate:13.12,
     dayHrs:{sun:0,   mon:8.00, tue:0,    wed:0,    thu:0,    fri:8.00, sat:0   } },
   { name:"Hafsa",    group:"retail",   contracted:15.00, dailyHrs:7.50, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+    dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:0,    fri:0,    sat:0   } },
   { name:"Natasha",  group:"retail",   contracted:15.00, dailyHrs:7.50, offRota:false, rate:13.02,
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Safa",     group:"retail",   contracted:12.75, dailyHrs:6.38, offRota:false, rate:13.12,
     dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Maryam",   group:"retail",   contracted:12.50, dailyHrs:6.25, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+    dayHrs:{sun:5.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Sajida",   group:"retail",   contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.12,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:7.50, thu:0,    fri:0,    sat:0   } },
   { name:"Saleeha",  group:"retail",   contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.02,
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Daisy",    group:"retail",   contracted:5.25,  dailyHrs:5.25, offRota:false, rate:13.12,
@@ -567,7 +567,15 @@ const DEFAULT_STAFF = [
 
 // Staff revision -- bump this when DEFAULT_STAFF changes so saved browser data
 // picks up new rates, hours, joiners and leavers on next load.
-const STAFF_REV = 2;
+const STAFF_REV = 5;
+
+// People taken off the roster at this revision -- removed from saved browser data too.
+const STAFF_REV_REMOVE = ["Samina"];
+
+// Day patterns confirmed by the store for these people at this revision --
+// overwrite whatever is saved in the browser rather than keeping the old pattern.
+const STAFF_REV_FORCE_PATTERN = ["Vix","Manar","Kourosh","Charlotte","Daisy","Hafsa","Julie","Kashif","Laura",
+  "Maryam","Michelle","Nadin","Safa","Saira","Sajida","Saleeha","Samina","Shabina","Yasin"];
 
 // Locum pharmacist cover when Dom is off (net hours after break rules):
 // Sat 08:30-17:30 = 8.00h net, Sun 11:00-16:00 = 4.50h net
@@ -804,13 +812,22 @@ function applyStaffRevision(savedRev) {
       if (d.offRotaLabel) cur.offRotaLabel = d.offRotaLabel; else delete cur.offRotaLabel;
       if (d.noBreak) cur.noBreak = true; else delete cur.noBreak;
       if (d.left) cur.left = true; else delete cur.left;
-      // Only take the default day pattern if this person has none set
+      // Take the default day pattern if this person has none set, or if the
+      // store has confirmed their days at this revision
       const hasPattern = cur.dayHrs && Object.values(cur.dayHrs).some(v => v > 0);
-      if (!hasPattern) cur.dayHrs = Object.assign({}, d.dayHrs);
+      const forced = STAFF_REV_FORCE_PATTERN.some(n => n.toLowerCase() === d.name.toLowerCase());
+      if (!hasPattern || forced) cur.dayHrs = Object.assign({}, d.dayHrs);
     } else {
       STAFF_ALL.push(JSON.parse(JSON.stringify(d)));
     }
   });
+  // Drop anyone retired from the roster at this revision
+  STAFF_REV_REMOVE.forEach(rm => {
+    const i = STAFF_ALL.findIndex(s => s.name.toLowerCase() === rm.toLowerCase());
+    if (i !== -1) STAFF_ALL.splice(i, 1);
+    Object.keys(weekData).forEach(wk => { if (weekData[wk]) delete weekData[wk][rm]; });
+  });
+
   // Keep the rota grouped: pharmacy first, then retail, in DEFAULT_STAFF order
   const order = {};
   DEFAULT_STAFF.forEach((d, i) => { order[d.name.toLowerCase()] = i; });
@@ -1336,21 +1353,17 @@ function renderDateRow(val) {
 
 const DEFAULT_SHIFTS = {
   "Ammara":   {mon:"08:00-16:30",wed:"09:45-18:15",thu:"09:45-18:15",fri:"08:00-16:30",sat:"09:15-17:45"},
-  "Aisha":    {sun:"10:30-16:15",mon:"09:45-18:15",fri:"09:45-18:15"},
   "Laura":    {tue:"09:30-18:00",wed:"09:30-18:00",thu:"09:30-18:00"},
   "Michelle": {tue:"08:00-17:00",wed:"08:00-17:00",thu:"08:00-17:00"},
+  "Manar":    {sat:"09:15-17:45"},
   "Shabina":  {mon:"09:30-18:00",tue:"09:30-18:00",fri:"09:30-18:00"},
-  "Tayyba":   {sat:"08:00-16:30"},
   "Yasin":    {sun:"11:00-15:00",sat:"11:00-15:00"},
   "Julie":    {mon:"08:00-16:30",tue:"08:00-16:30",wed:"08:00-16:30",thu:"08:00-16:30",fri:"08:00-16:30"},
   "Charlotte":{mon:"08:30-17:30",fri:"08:30-17:30"},
-  "Shamsu":   {mon:"09:45-18:15",tue:"09:45-18:15",wed:"09:00-17:30"},
-  "Grace":    {sun:"10:30-16:00",fri:"09:45-18:15"},
-  "Theodore": {wed:"10:00-18:15",thu:"10:00-18:15"},
-  "Kashif":   {tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
+  "Kashif":   {mon:"09:45-18:15",tue:"09:45-18:15",wed:"09:45-18:15",thu:"09:45-18:15",fri:"09:45-18:15"},
   "Safa":     {sun:"10:30-16:15",sat:"09:15-17:45"},
   "Saleeha":  {sat:"09:00-17:30"},
-  "Sajida":   {sat:"08:00-16:30"},
+  "Sajida":   {wed:"08:00-16:30"},
   "Daisy":    {sun:"10:30-16:15"},
 };
 
