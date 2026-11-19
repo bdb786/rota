@@ -232,7 +232,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-07-06-team</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-11-19-payroll</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -432,24 +432,24 @@
 
 <script>
 // ── ACI BASE HOURS ──────────────────────────────────────────────────────────
-// Per-fiscal-week allocations from the FY2026 ACI Base Hours report (Power BI export).
+// Per-fiscal-week allocations from the latest ACI Base Hours report (Power BI export, loaded Jul 2026).
 // retail = Assistants + Retail Management (37.50). Weeks not listed fall back to the
 // base week, and both figures can be overridden per week tab in the ACI boxes.
 const ACI_DEFAULT_WEEK = 42; // benchmark week used as the default budget (the figures we always worked to)
 const ACI_TABLE = {
-  1:{p:201.75,r:181.00},  2:{p:200.75,r:183.25},  3:{p:201.25,r:183.50},  4:{p:202.50,r:189.00},
-  5:{p:228.00,r:189.00},  6:{p:226.75,r:187.75},  7:{p:221.00,r:183.50},  8:{p:217.25,r:188.00},
-  9:{p:213.50,r:189.75}, 10:{p:214.50,r:194.25}, 11:{p:212.75,r:204.50}, 12:{p:204.25,r:207.75},
- 13:{p:208.50,r:218.00}, 14:{p:208.75,r:221.75}, 15:{p:211.50,r:211.25}, 16:{p:215.25,r:216.50},
- 17:{p:206.75,r:194.25}, 18:{p:210.75,r:200.75}, 19:{p:198.25,r:200.00}, 20:{p:205.25,r:203.00},
- 21:{p:205.50,r:192.50}, 22:{p:207.25,r:204.25}, 23:{p:204.25,r:198.50}, 24:{p:211.00,r:209.50},
- 25:{p:207.00,r:202.00}, 26:{p:208.75,r:203.00}, 27:{p:211.00,r:192.00}, 28:{p:218.50,r:207.50},
- 29:{p:208.25,r:187.75}, 30:{p:201.00,r:185.25}, 31:{p:210.00,r:189.00}, 32:{p:204.25,r:178.50},
- 33:{p:198.00,r:163.75}, 34:{p:205.25,r:189.50}, 35:{p:210.25,r:193.50}, 36:{p:206.50,r:187.75},
- 37:{p:216.50,r:199.50}, 38:{p:211.50,r:192.75}, 39:{p:201.00,r:171.50}, 40:{p:207.75,r:196.75},
- 41:{p:207.25,r:189.25}, 42:{p:217.75,r:207.25}, 43:{p:208.75,r:193.00}, 44:{p:211.50,r:196.75},
- 45:{p:216.50,r:199.75}, 46:{p:214.50,r:200.75}, 47:{p:208.75,r:188.25}, 48:{p:206.50,r:192.25},
- 49:{p:205.50,r:177.50}, 50:{p:211.00,r:196.25}, 51:{p:209.00,r:184.50}, 52:{p:203.50,r:188.25},
+  1:{p:204.25,r:181.75},  2:{p:202.25,r:180.75},  3:{p:201.25,r:175.25},  4:{p:217.25,r:192.50},
+  5:{p:218.50,r:180.25},  6:{p:240.00,r:195.50},  7:{p:232.75,r:185.25},  8:{p:231.50,r:192.50},
+  9:{p:222.75,r:199.50}, 10:{p:215.00,r:188.75}, 11:{p:200.75,r:194.75}, 12:{p:207.75,r:193.00},
+ 13:{p:208.25,r:207.00}, 14:{p:206.00,r:207.00}, 15:{p:213.75,r:201.25}, 16:{p:213.75,r:203.25},
+ 17:{p:206.75,r:177.50}, 18:{p:209.75,r:191.50}, 19:{p:206.25,r:200.50}, 20:{p:202.25,r:187.00},
+ 21:{p:205.25,r:186.75}, 22:{p:206.75,r:189.50}, 23:{p:204.25,r:184.75}, 24:{p:205.50,r:189.50},
+ 25:{p:202.25,r:180.75}, 26:{p:208.00,r:191.25}, 27:{p:211.25,r:195.25}, 28:{p:213.75,r:198.25},
+ 29:{p:203.25,r:178.50}, 30:{p:199.75,r:172.75}, 31:{p:197.75,r:155.75}, 32:{p:199.25,r:177.25},
+ 33:{p:208.75,r:184.75}, 34:{p:210.50,r:195.75}, 35:{p:211.75,r:199.00}, 36:{p:200.25,r:176.25},
+ 37:{p:207.00,r:181.00}, 38:{p:212.00,r:200.25}, 39:{p:209.75,r:193.25}, 40:{p:206.75,r:187.75},
+ 41:{p:204.00,r:180.50}, 42:{p:220.75,r:208.25}, 43:{p:211.25,r:192.00}, 44:{p:209.50,r:194.75},
+ 45:{p:212.50,r:192.50}, 46:{p:210.75,r:193.00}, 47:{p:208.50,r:186.75}, 48:{p:207.25,r:191.00},
+ 49:{p:205.50,r:177.75}, 50:{p:211.00,r:192.75}, 51:{p:208.25,r:182.25}, 52:{p:202.00,r:182.75},
 };
 let aciByWeek = {}; // manual overrides per week tab: { weekIndex: { p, r } }
 
@@ -504,45 +504,70 @@ function onAciChange() {
 }
 
 const DEFAULT_STAFF = [
+  // ── PHARMACY ──────────────────────────────────────────────────────────────
   { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:7.50, tue:0,    wed:7.50, thu:7.50, fri:7.50, sat:7.50} },
-  { name:"Aisha",    group:"pharmacy", contracted:20.25, dailyHrs:6.75, offRota:false, rate:13.92,
-    dayHrs:{sun:5.25,mon:7.50, tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
-  { name:"Laura",    group:"pharmacy", contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.92,
-    dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:0,    sat:0   } },
+  { name:"Nadin",    group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Michelle", group:"pharmacy", contracted:24.00, dailyHrs:8.00, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:0,    tue:8.00, wed:8.00, thu:8.00, fri:0,    sat:0   } },
+  { name:"Laura",    group:"pharmacy", contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:0,    sat:0   } },
   { name:"Shabina",  group:"pharmacy", contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:0,    thu:0,    fri:7.50, sat:0   } },
-  { name:"Tayyba",   group:"pharmacy", contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.92,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+  { name:"Samina",   group:"pharmacy", contracted:16.50, dailyHrs:8.25, offRota:false, rate:27.59,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+  { name:"Kourosh",  group:"pharmacy", contracted:12.75, dailyHrs:6.38, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Yasin",    group:"pharmacy", contracted:8.00,  dailyHrs:4.00, offRota:false, noBreak:true, rate:13.92,
     dayHrs:{sun:4.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:4.00} },
-  { name:"Dom",      group:"pharmacy", contracted:42.25, dailyHrs:8.45, offRota:true,  rate:20.14, offRotaLabel:"Pharmacist Off Rota",
+  { name:"Manar",    group:"pharmacy", contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.92,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+  { name:"Saira",    group:"pharmacy", contracted:0.00,  dailyHrs:7.50, offRota:false, rate:14.80,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+  { name:"Dom",      group:"pharmacy", contracted:42.25, dailyHrs:8.45, offRota:true,  rate:20.87, offRotaLabel:"Pharmacist Off Rota",
     dayHrs:{sun:0,   mon:8.45, tue:8.45, wed:8.45, thu:8.45, fri:8.45, sat:0   } },
+  // Pharmacy leavers (kept so saved weeks still show their shifts)
+  { name:"Aisha",    group:"pharmacy", contracted:20.25, dailyHrs:6.75, offRota:false, rate:13.92, left:true,
+    dayHrs:{sun:5.25,mon:7.50, tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
+  { name:"Tayyba",   group:"pharmacy", contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.92, left:true,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+
+  // ── RETAIL ────────────────────────────────────────────────────────────────
   { name:"Julie",    group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.12,
+    dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
+  { name:"Kashif",   group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.02,
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
   { name:"Charlotte",group:"retail",   contracted:16.00, dailyHrs:8.00, offRota:false, rate:13.12,
     dayHrs:{sun:0,   mon:8.00, tue:0,    wed:0,    thu:0,    fri:8.00, sat:0   } },
-  { name:"Shamsu",   group:"retail",   contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:0,    fri:0,    sat:0   } },
-  { name:"Grace",    group:"retail",   contracted:12.50, dailyHrs:6.25, offRota:false, rate:13.12,
-    dayHrs:{sun:5.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
-  { name:"Theodore", group:"retail",   contracted:14.50, dailyHrs:7.25, offRota:false, rate:13.12,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:7.25, thu:7.25, fri:0,    sat:0   } },
-  { name:"Kashif",   group:"retail",   contracted:30.00, dailyHrs:7.50, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
+  { name:"Hafsa",    group:"retail",   contracted:15.00, dailyHrs:7.50, offRota:false, rate:13.02,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
+  { name:"Natasha",  group:"retail",   contracted:15.00, dailyHrs:7.50, offRota:false, rate:13.02,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Safa",     group:"retail",   contracted:12.75, dailyHrs:6.38, offRota:false, rate:13.12,
     dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
-  { name:"Saleeha",  group:"retail",   contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.02,
-    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+  { name:"Maryam",   group:"retail",   contracted:12.50, dailyHrs:6.25, offRota:false, rate:13.02,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Sajida",   group:"retail",   contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.12,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
+  { name:"Saleeha",  group:"retail",   contracted:7.50,  dailyHrs:7.50, offRota:false, rate:13.02,
     dayHrs:{sun:0,   mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:7.50} },
   { name:"Daisy",    group:"retail",   contracted:5.25,  dailyHrs:5.25, offRota:false, rate:13.12,
     dayHrs:{sun:5.25,mon:0,    tue:0,    wed:0,    thu:0,    fri:0,    sat:0   } },
   { name:"Raza",     group:"retail",   contracted:37.50, dailyHrs:7.50, offRota:true,  rate:17.47, offRotaLabel:"Off Rota",
     dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
+  // Retail leavers (kept so saved weeks still show their shifts)
+  { name:"Shamsu",   group:"retail",   contracted:22.50, dailyHrs:7.50, offRota:false, rate:13.02, left:true,
+    dayHrs:{sun:0,   mon:7.50, tue:7.50, wed:7.50, thu:0,    fri:0,    sat:0   } },
+  { name:"Grace",    group:"retail",   contracted:12.50, dailyHrs:6.25, offRota:false, rate:13.12, left:true,
+    dayHrs:{sun:5.00,mon:0,    tue:0,    wed:0,    thu:0,    fri:7.50, sat:0   } },
+  { name:"Theodore", group:"retail",   contracted:14.50, dailyHrs:7.25, offRota:false, rate:13.12, left:true,
+    dayHrs:{sun:0,   mon:0,    tue:0,    wed:7.25, thu:7.25, fri:0,    sat:0   } },
 ];
+
+// Staff revision -- bump this when DEFAULT_STAFF changes so saved browser data
+// picks up new rates, hours, joiners and leavers on next load.
+const STAFF_REV = 2;
 
 // Locum pharmacist cover when Dom is off (net hours after break rules):
 // Sat 08:30-17:30 = 8.00h net, Sun 11:00-16:00 = 4.50h net
@@ -550,6 +575,7 @@ const LOCUM_PHARM = { sun: 4.50, sat: 8.00 };
 const LOCUM_RATE_EST = 20.14; // pharmacist rate used as locum cost estimate
 
 // STAFF_ALL holds everyone including leavers; STAFF is the active team used everywhere else.
+let staffRevisionApplied = false;
 let STAFF_ALL = JSON.parse(JSON.stringify(DEFAULT_STAFF));
 let STAFF = [];
 
@@ -753,11 +779,52 @@ let weekNotes = {}; // { weekIndex: { sun:"", mon:"", ... } }
 
 function saveProgress() {
   try {
-    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, staffRev: STAFF_REV, totalWeeks: TOTAL_WEEKS, savedAt: new Date().toLocaleTimeString("en-GB") };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     const el = document.getElementById("save-indicator");
     if (el) { el.textContent = "✓ Saved " + data.savedAt; el.style.opacity=1; setTimeout(()=>el.style.opacity=0.5, 2000); }
   } catch(e) { console.warn("Save failed:", e); }
+}
+
+function applyStaffRevision(savedRev) {
+  // Fold the current DEFAULT_STAFF (rates, contracted hours, joiners, leavers)
+  // into whatever is saved in the browser, keeping any people added by hand.
+  if (savedRev >= STAFF_REV) return false;
+  const byName = {};
+  STAFF_ALL.forEach(s => { byName[s.name.toLowerCase()] = s; });
+  DEFAULT_STAFF.forEach(d => {
+    const cur = byName[d.name.toLowerCase()];
+    if (cur) {
+      // Refresh the payroll-driven fields; leave anything bespoke alone
+      cur.group      = d.group;
+      cur.contracted = d.contracted;
+      cur.dailyHrs   = d.dailyHrs;
+      cur.rate       = d.rate;
+      cur.offRota    = d.offRota;
+      if (d.offRotaLabel) cur.offRotaLabel = d.offRotaLabel; else delete cur.offRotaLabel;
+      if (d.noBreak) cur.noBreak = true; else delete cur.noBreak;
+      if (d.left) cur.left = true; else delete cur.left;
+      // Only take the default day pattern if this person has none set
+      const hasPattern = cur.dayHrs && Object.values(cur.dayHrs).some(v => v > 0);
+      if (!hasPattern) cur.dayHrs = Object.assign({}, d.dayHrs);
+    } else {
+      STAFF_ALL.push(JSON.parse(JSON.stringify(d)));
+    }
+  });
+  // Keep the rota grouped: pharmacy first, then retail, in DEFAULT_STAFF order
+  const order = {};
+  DEFAULT_STAFF.forEach((d, i) => { order[d.name.toLowerCase()] = i; });
+  STAFF_ALL.sort((a, b) => {
+    const ga = a.group === "pharmacy" ? 0 : 1, gb = b.group === "pharmacy" ? 0 : 1;
+    if (ga !== gb) return ga - gb;
+    const oa = order[a.name.toLowerCase()], ob = order[b.name.toLowerCase()];
+    if (oa === undefined && ob === undefined) return 0;
+    if (oa === undefined) return 1;
+    if (ob === undefined) return -1;
+    return oa - ob;
+  });
+  refreshStaff();
+  return true;
 }
 
 function migrateStaffRenames() {
@@ -788,6 +855,7 @@ function loadProgress() {
     if (data.bootsWeekNums) bootsWeekNums = data.bootsWeekNums;
     if (data.totalWeeks)    TOTAL_WEEKS   = data.totalWeeks;
     if (data.staffAll && data.staffAll.length) { STAFF_ALL = data.staffAll; refreshStaff(); }
+    if (applyStaffRevision(data.staffRev || 0)) staffRevisionApplied = true;
     migrateStaffRenames();
     return data.savedAt || true;
   } catch(e) { return false; }
@@ -807,7 +875,7 @@ function clearProgress() {
 // ── BACKUP EXPORT / IMPORT ──────────────────────────────────────────────────
 function exportBackup() {
   try {
-    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, totalWeeks: TOTAL_WEEKS,
+    const data = { weekData, weekDates, weekNotes, aciByWeek, bootsWeekNums, staffAll: STAFF_ALL, staffRev: STAFF_REV, totalWeeks: TOTAL_WEEKS,
                    exportedAt: new Date().toISOString(), tool: "store1478-rota" };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -844,6 +912,7 @@ function importBackup() {
         aciByWeek     = data.aciByWeek     || {};
         bootsWeekNums = data.bootsWeekNums || {};
         if (data.staffAll && data.staffAll.length) { STAFF_ALL = data.staffAll; refreshStaff(); }
+        applyStaffRevision(data.staffRev || 0);
         TOTAL_WEEKS   = data.totalWeeks    || 3;
         migrateStaffRenames();
         currentWeek = 1;
@@ -1367,6 +1436,17 @@ buildTabs();
 buildTable();
 populateAciInputs();
 updateBackupChip();
+
+// If the saved browser data was brought up to date with the current payroll
+// figures on this load, persist it straight away and say so once.
+if (staffRevisionApplied) {
+  saveProgress();
+  const n = document.createElement("div");
+  n.style.cssText = "background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #2563eb;border-radius:6px;padding:9px 14px;margin-top:10px;font-size:12px;color:#1e3a8a;display:flex;align-items:center;gap:10px;";
+  n.innerHTML = '<span>\u2139\uFE0F</span><span><strong>Team updated from payroll (Nov 2026).</strong> Rates, contracted hours, new starters and leavers have been applied. Open <strong>\u{1F465} Team</strong> to set normal working days for the new starters.</span><span style="margin-left:auto;cursor:pointer;font-weight:700;opacity:0.6;" onclick="this.parentNode.remove()">\u2715</span>';
+  const anchor = document.getElementById("payroll-banner");
+  if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(n, anchor);
+}
 const wd = weekDates[currentWeek];
 document.getElementById("week-date").value = wd || "";
 updateDateDisplay(wd);
