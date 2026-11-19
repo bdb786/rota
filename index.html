@@ -232,7 +232,7 @@
     <button id="pay-toggle-btn" onclick="togglePayView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#163; Pay Analysis</button>
     <button id="analysis-toggle-btn" onclick="toggleAnalysisView()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);color:white;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128737; Shift Analysis</button>
     <span id="header-week-label" style="font-size:12px;opacity:0.75;">Week 1</span>
-    <span style="font-size:9px;opacity:0.4;color:white;">v2026-11-19-patterns3</span>
+    <span style="font-size:9px;opacity:0.4;color:white;">v2026-11-19-patterns4</span>
     <button id="pdf-btn" onclick="savePDF()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;">&#128462; Save as PDF</button>
   </div>
 </div>
@@ -505,7 +505,7 @@ function onAciChange() {
 
 const DEFAULT_STAFF = [
   // ── PHARMACY ──────────────────────────────────────────────────────────────
-  { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92,
+  { name:"Ammara",   group:"pharmacy", contracted:37.50, dailyHrs:7.50, offRota:false, rate:13.92, left:true, awayLabel:"maternity",
     dayHrs:{sun:0,   mon:7.50, tue:0,    wed:7.50, thu:7.50, fri:7.50, sat:7.50} },
   { name:"Nadin",    group:"pharmacy", contracted:30.00, dailyHrs:7.50, offRota:false, rate:13.92,
     dayHrs:{sun:0,   mon:0,    tue:7.50, wed:7.50, thu:7.50, fri:7.50, sat:0   } },
@@ -567,7 +567,7 @@ const DEFAULT_STAFF = [
 
 // Staff revision -- bump this when DEFAULT_STAFF changes so saved browser data
 // picks up new rates, hours, joiners and leavers on next load.
-const STAFF_REV = 5;
+const STAFF_REV = 6;
 
 // People taken off the roster at this revision -- removed from saved browser data too.
 const STAFF_REV_REMOVE = ["Samina"];
@@ -812,6 +812,7 @@ function applyStaffRevision(savedRev) {
       if (d.offRotaLabel) cur.offRotaLabel = d.offRotaLabel; else delete cur.offRotaLabel;
       if (d.noBreak) cur.noBreak = true; else delete cur.noBreak;
       if (d.left) cur.left = true; else delete cur.left;
+      if (d.awayLabel) cur.awayLabel = d.awayLabel; else delete cur.awayLabel;
       // Take the default day pattern if this person has none set, or if the
       // store has confirmed their days at this revision
       const hasPattern = cur.dayHrs && Object.values(cur.dayHrs).some(v => v > 0);
@@ -2012,7 +2013,7 @@ function renderStaffList() {
       const dim = s.left ? "opacity:0.5;" : "";
       html += `<tr style="border-bottom:1px solid #f1f5f9;${dim}">
         <td style="padding:6px 8px;font-weight:600;color:var(--boots-navy);">${s.name}
-          ${s.left ? '<span style="font-size:9px;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:10px;margin-left:5px;">left</span>' : ''}
+          ${s.left ? `<span style="font-size:9px;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:10px;margin-left:5px;">${s.awayLabel || 'left'}</span>` : ''}
           ${s.offRota ? `<span style="font-size:9px;color:var(--boots-teal);margin-left:5px;">${s.offRotaLabel || 'off-rota'}</span>` : ''}
           ${s.noBreak ? '<span style="font-size:9px;color:var(--muted);margin-left:5px;">no break</span>' : ''}</td>
         <td style="padding:6px 8px;text-align:right;">${s.contracted.toFixed(2)}h</td>
@@ -2144,6 +2145,7 @@ function markStaffLeft(i) {
 function rejoinStaffMember(i) {
   pushUndoSnapshot();
   delete STAFF_ALL[i].left;
+  delete STAFF_ALL[i].awayLabel;
   refreshStaff(); saveProgress(); renderStaffList(); buildTable();
 }
 
